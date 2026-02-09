@@ -1,10 +1,9 @@
-name: Deploy dev to AWS
+name: Deploy to Production
 
 on:
-  pull_request:
-    types: [closed]
+  push:
     branches:
-      - dev
+      - main
 
 jobs:
   aws-deploy:
@@ -16,7 +15,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
         with:
-          ref: dev
+          ref: main
       - uses: actions/setup-node@v3
         with:
           node-version: 16
@@ -24,8 +23,8 @@ jobs:
           touch .env
           echo VUE_APP_CLIENT_ID="$VUE_APP_CLIENT_ID" >> .env
           echo VUE_APP_API_URL="$VUE_APP_API_URL" >> .env
-          echo VUE_APP_CLIENT_URL=tutorial.eaglesoftwareteam.com >> .env
-          echo VUE_APP_SITE_URL=tutorial.eaglesoftwareteam.com >> .env
+          echo VUE_APP_CLIENT_URL="https://project3.eaglesoftwareteam.com" >> .env
+          echo VUE_APP_SITE_URL="https://project3.eaglesoftwareteam.com" >> .env
 
       - run: npm install
       - run: npm run build
@@ -37,6 +36,17 @@ jobs:
           SSH_PRIVATE_KEY: ${{ secrets.SERVER_SSH_KEY }}
           ARGS: "-rltgoDzvO --delete"
           SOURCE: "dist/"
-          REMOTE_HOST: "tutorial.eaglesoftwareteam.com"
+          REMOTE_HOST: "project3.eaglesoftwareteam.com"
           REMOTE_USER: ubuntu
-          TARGET: "/var/www/html/tutorial-frontend-vue2"
+          TARGET: "/var/www/html/sev2026/t8"
+
+      - name: Post-deploy remote commands
+        uses: JimCronqvist/action-ssh@master
+        with:
+          hosts: "ubuntu@project3.eaglesoftwareteam.com"
+          privateKey: ${{ secrets.SERVER_SSH_KEY }}
+          debug: false
+          command: |
+            sudo chown -R www-data:www-data /var/www/html/sev2026/t8 || true
+            sudo chmod -R 755 /var/www/html/sev2026/t8 || true
+            sudo systemctl reload nginx || true
