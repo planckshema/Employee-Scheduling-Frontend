@@ -1,6 +1,6 @@
 <template>
   <div>
-    <v-app-bar app>
+    <v-app-bar v-if="user != null" app>
       <router-link :to="{ name: 'tutorials' }">
         <v-img
           class="mx-2"
@@ -56,7 +56,7 @@ export default {
   name: "App",
   data: () => ({
     user: {},
-    title: "Tutorials",
+    title: "",
     initials: "",
     name: "",
   }),

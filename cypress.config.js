@@ -8,7 +8,7 @@ module.exports = defineConfig({
       googleRefreshToken: process.env.VUE_APP_REFRESH_TOKEN,
       googleClientId: process.env.VUE_APP_CLIENT_ID,
       googleClientSecret: process.env.VUE_APP_CLIENT_SECRET,
-      clientUrl: process.env.VUE_APP_CLIENT_URL,
+      clientURL: process.env.VUE_APP_CLIENT_URL,
     },
   },
 
