@@ -3,12 +3,14 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "dev": "vue-cli-service serve",
     "serve": "vue-cli-service serve",
     "build": "vue-cli-service build",
     "lint": "vue-cli-service lint",
     "bundle": "mv .env dist",
     "test": "cypress run",
     "test:open": "cypress open"
+    
   },
   "dependencies": {
     "axios": "^0.27.2",
@@ -65,3 +67,4 @@
     "not dead"
   ]
 }
+
