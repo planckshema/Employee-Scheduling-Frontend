@@ -1,14 +1,14 @@
 import Vue from "vue";
 import Router from "vue-router";
 
-import Login from "./views/Login.vue";
-
-import TutorialsList from "./views/TutorialsList.vue";
-import EditTutorial from "./views/EditTutorial.vue";
-import AddTutorial from "./views/AddTutorial.vue";
-import ViewTutorial from "./views/ViewTutorial.vue";
-import AddLesson from "./views/AddLesson.vue";
-import EditLesson from "./views/EditLesson.vue";
+import RoleSelection from "./views/RoleSelection.vue";
+import EmployerDashboard from "./views/EmployerDashboard.vue";
+import EmployerSchedule from "./views/EmployerSchedule.vue";
+import EmployerEmployees from "./views/EmployerEmployees.vue";
+import EmployerTaskLists from "./views/EmployerTaskLists.vue";
+import EmployerSettings from "./views/EmployerSettings.vue";
+import EmployeeDashboard from "./views/EmployeeDashboard.vue";
+import UserPage from "./views/UserPage.vue";
 
 Vue.use(Router);
 
@@ -21,6 +21,11 @@ const router = new Router({
   routes: [
     {
       path: "/",
+      name: "userPage",
+      component: UserPage,
+    },
+    {
+      path: "/role",
       name: "roleSelection",
       component: RoleSelection,
     },

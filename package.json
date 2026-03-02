@@ -10,7 +10,6 @@
     "bundle": "mv .env dist",
     "test": "cypress run",
     "test:open": "cypress open"
-    
   },
   "dependencies": {
     "axios": "^0.27.2",
@@ -67,4 +66,3 @@
     "not dead"
   ]
 }
-
