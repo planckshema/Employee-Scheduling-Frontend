@@ -9,6 +9,7 @@ import AddTutorial from "./views/AddTutorial.vue";
 import ViewTutorial from "./views/ViewTutorial.vue";
 import AddLesson from "./views/AddLesson.vue";
 import EditLesson from "./views/EditLesson.vue";
+import EmployeeHome from "./views/EmployeeHome.vue";
 
 Vue.use(Router);
 
@@ -57,6 +58,11 @@ const router = new Router({
       name: "editLesson",
       component: EditLesson,
       props: true,
+    },
+    {
+      path: "/employee-home",
+      name: "EmployeeHome",
+      component: EmployeeHome,
     },
   ],
 });
