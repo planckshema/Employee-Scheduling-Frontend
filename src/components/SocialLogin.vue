@@ -47,7 +47,7 @@ export default {
       );
     },
     handleCredentialResponse(response) {
-      let token = {
+      const token = {
         credential: response.credential,
       };
       AuthServices.loginUser(token)
@@ -56,8 +56,7 @@ export default {
           Utils.setStore("user", this.user);
           this.fName = this.user.fName;
           this.lName = this.user.lName;
-          this.$router.push({ name: "tutorials" });
-          this.$router.go();
+          this.$router.push({ name: "roleSelection" });
         })
         .catch((error) => {
           console.log("error", error);

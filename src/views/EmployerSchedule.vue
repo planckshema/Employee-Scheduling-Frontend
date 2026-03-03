@@ -2,11 +2,11 @@
   <section class="tab-content">
     <div class="schedule-toolbar">
       <div class="week-nav">
-        <button class="icon-button">
+        <button class="icon-button" @click="goToPreviousWeek">
           <v-icon size="20">mdi-chevron-left</v-icon>
         </button>
-        <strong>Week of Jan 26, 2026</strong>
-        <button class="icon-button">
+        <strong>Week of {{ weekLabel }}</strong>
+        <button class="icon-button" @click="goToNextWeek">
           <v-icon size="20">mdi-chevron-right</v-icon>
         </button>
       </div>
@@ -15,7 +15,7 @@
           <v-icon size="18">mdi-content-copy</v-icon>
           Templates
         </button>
-        <button class="primary-button" @click="newShiftDialog = true">
+        <button class="primary-button" @click="openNewShiftDialog">
           <v-icon size="18">mdi-plus</v-icon>
           New Shift
         </button>
@@ -27,33 +27,35 @@
         <thead>
           <tr>
             <th>Employee</th>
-            <th>Mon<br />1/26</th>
-            <th>Tue<br />1/27</th>
-            <th>Wed<br />1/28</th>
-            <th>Thu<br />1/29</th>
-            <th>Fri<br />1/30</th>
-            <th>Sat<br />1/31</th>
-            <th>Sun<br />2/1</th>
+            <th v-for="day in weekDays" :key="day.isoDate">
+              {{ day.label }}<br />{{ day.shortDate }}
+            </th>
           </tr>
         </thead>
         <tbody>
-          <tr v-for="employee in employees" :key="employee.name">
+          <tr v-for="employee in employees" :key="employee.id">
             <td class="employee-cell">{{ employee.name }}</td>
-            <td>
-              <div v-if="employee.mon" class="shift-pill">
-                {{ employee.mon }}
+            <td v-for="day in weekDays" :key="`${employee.id}-${day.isoDate}`">
+              <div class="shift-stack">
+                <div
+                  v-for="shift in getShiftsFor(employee.name, day.isoDate)"
+                  :key="shift.shiftId"
+                  class="shift-pill"
+                  @click="openEditShiftDialog(shift)"
+                >
+                  <button
+                    class="shift-delete"
+                    title="Delete shift"
+                    @click.stop="deleteShift(shift.shiftId)"
+                  >
+                    x
+                  </button>
+                  {{ shift.startTime }} - {{ shift.endTime }}
+                  <br />
+                  {{ shift.position || "Shift" }}
+                </div>
               </div>
             </td>
-            <td></td>
-            <td>
-              <div v-if="employee.wed" class="shift-pill">
-                {{ employee.wed }}
-              </div>
-            </td>
-            <td></td>
-            <td></td>
-            <td></td>
-            <td></td>
           </tr>
         </tbody>
       </table>
@@ -62,39 +64,62 @@
     <div v-if="newShiftDialog" class="overlay">
       <section class="modal">
         <header>
-          <h2>New Shift</h2>
-          <button class="icon-inline" @click="newShiftDialog = false">
+          <h2>{{ editingShiftId ? "Edit Shift" : "New Shift" }}</h2>
+          <button class="icon-inline" @click="closeShiftDialog">
             <v-icon>mdi-close</v-icon>
           </button>
         </header>
         <label>Employee</label>
-        <select>
-          <option>Select employee</option>
+        <select v-model="newShift.employeeName">
+          <option disabled value="">Select employee</option>
+          <option
+            v-for="employee in employees"
+            :key="employee.id"
+            :value="employee.name"
+          >
+            {{ employee.name }}
+          </option>
         </select>
         <label>Position</label>
-        <input type="text" placeholder="e.g., Server, Cook" />
+        <input
+          v-model="newShift.position"
+          type="text"
+          placeholder="e.g., Server, Cook"
+        />
         <label>Date</label>
-        <input type="text" placeholder="mm/dd/yyyy" />
+        <input v-model="newShift.date" type="date" />
         <div class="two-col">
           <div>
             <label>Start Time</label>
-            <input type="text" placeholder="--:-- --" />
+            <input v-model="newShift.startTime" type="time" />
           </div>
           <div>
             <label>End Time</label>
-            <input type="text" placeholder="--:-- --" />
+            <input v-model="newShift.endTime" type="time" />
           </div>
         </div>
         <label>Task List (Optional)</label>
-        <select>
-          <option>Select task list (optional)</option>
+        <select v-model="newShift.taskListId">
+          <option :value="null">Select task list (optional)</option>
+          <option
+            v-for="list in taskLists"
+            :key="list.taskListId"
+            :value="list.taskListId"
+          >
+            {{ list.name }}
+          </option>
         </select>
         <footer>
-          <button class="ghost-button" @click="newShiftDialog = false">
-            Cancel
+          <button
+            v-if="editingShiftId"
+            class="ghost-button danger-button footer-left"
+            @click="deleteEditingShift"
+          >
+            Delete Shift
           </button>
-          <button class="primary-button" @click="newShiftDialog = false">
-            Save Shift
+          <button class="ghost-button" @click="closeShiftDialog">Cancel</button>
+          <button class="primary-button" @click="saveShift">
+            {{ editingShiftId ? "Update Shift" : "Save Shift" }}
           </button>
         </footer>
       </section>
@@ -108,168 +133,238 @@
             <v-icon>mdi-close</v-icon>
           </button>
         </header>
-        <nav class="template-tabs">
-          <button
-            :class="{ active: templateTab === 'load' }"
-            @click="templateTab = 'load'"
-          >
-            <v-icon size="16">mdi-download</v-icon>
-            Load Template
+        <p class="muted">
+          Template UI is available. Persisted template APIs are not implemented
+          yet.
+        </p>
+        <footer>
+          <button class="ghost-button" @click="templateDialog = false">
+            Close
           </button>
-          <button
-            :class="{ active: templateTab === 'create' }"
-            @click="templateTab = 'create'"
-          >
-            <v-icon size="16">mdi-plus</v-icon>
-            Create Template
-          </button>
-          <button
-            :class="{ active: templateTab === 'manage' }"
-            @click="templateTab = 'manage'"
-          >
-            <v-icon size="16">mdi-pencil-outline</v-icon>
-            Manage Templates
-          </button>
-        </nav>
-
-        <div v-if="templateTab === 'load'">
-          <p class="muted">Select a saved template to apply to any week</p>
-          <article class="template-card">
-            <h3>Weekend Rush</h3>
-            <p class="muted">Extra staff for busy weekends</p>
-            <div class="chips"><span>Sat</span><span>Sun</span></div>
-            <small>4 shifts</small>
-          </article>
-          <article class="template-card">
-            <h3>Weekday Standard</h3>
-            <p class="muted">Regular Monday-Friday schedule</p>
-            <div class="chips">
-              <span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span
-              ><span>Fri</span>
-            </div>
-            <small>5 shifts</small>
-          </article>
-          <footer>
-            <button class="ghost-button" @click="templateDialog = false">
-              Cancel
-            </button>
-            <button class="disabled-button">Apply Template</button>
-          </footer>
-        </div>
-
-        <div v-if="templateTab === 'create'">
-          <h3>Save Current Schedule as Template</h3>
-          <p class="muted">
-            Create a reusable template from your current week's schedule
-          </p>
-          <label>Template Name</label>
-          <input
-            type="text"
-            placeholder="e.g., Weekend Rush, Holiday Schedule"
-          />
-          <label>Description (Optional)</label>
-          <input
-            type="text"
-            placeholder="Brief description of when to use this template"
-          />
-          <button class="primary-button full">
-            <v-icon size="18">mdi-content-save-outline</v-icon>Save as Template
-          </button>
-          <div class="tip">
-            <strong>Tip:</strong> Templates save the pattern of shifts without
-            specific dates, so you can apply them to any week in the future.
-          </div>
-          <footer>
-            <button class="ghost-button" @click="templateDialog = false">
-              Cancel
-            </button>
-          </footer>
-        </div>
-
-        <div v-if="templateTab === 'manage'">
-          <p class="muted">View and manage your saved templates</p>
-          <div class="scroll-block">
-            <article class="template-card">
-              <div class="card-top">
-                <div>
-                  <h3>Weekend Rush</h3>
-                  <p class="muted">Extra staff for busy weekends</p>
-                  <small>Created: 1/14/2026 - 4 shifts</small>
-                </div>
-                <button class="icon-inline danger">
-                  <v-icon size="18">mdi-delete-outline</v-icon>
-                </button>
-              </div>
-              <hr />
-              <small>Template Preview:</small>
-              <p class="preview-line">Sat - John Doe - Server - 10:00-18:00</p>
-              <p class="preview-line">Sun - Jane Smith - Cook - 09:00-17:00</p>
-            </article>
-
-            <article class="template-card">
-              <div class="card-top">
-                <div>
-                  <h3>Weekday Standard</h3>
-                  <p class="muted">Regular Monday-Friday schedule</p>
-                  <small>Created: 1/9/2026 - 5 shifts</small>
-                </div>
-                <button class="icon-inline danger">
-                  <v-icon size="18">mdi-delete-outline</v-icon>
-                </button>
-              </div>
-              <hr />
-              <small>Template Preview:</small>
-              <p class="preview-line">Mon - John Doe - Server - 09:00-17:00</p>
-              <p class="preview-line">Thu - Jane Smith - Cook - 12:00-20:00</p>
-            </article>
-          </div>
-          <footer>
-            <button class="ghost-button" @click="templateDialog = false">
-              Cancel
-            </button>
-          </footer>
-        </div>
+        </footer>
       </section>
     </div>
   </section>
 </template>
 
 <script>
+import SchedulerServices from "@/services/schedulerServices";
+
+const dayKeys = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
+
+const toIsoDate = (date) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
+const parseIsoDate = (value) => {
+  if (!value) {
+    return null;
+  }
+  const str = String(value).slice(0, 10);
+  const match = str.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!match) {
+    return null;
+  }
+  const year = Number(match[1]);
+  const monthIndex = Number(match[2]) - 1;
+  const day = Number(match[3]);
+  const parsed = new Date(year, monthIndex, day, 0, 0, 0, 0);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+};
+
+const startOfWeekMonday = (dateValue) => {
+  const date = new Date(dateValue);
+  const day = date.getDay();
+  const diff = day === 0 ? -6 : 1 - day;
+  date.setDate(date.getDate() + diff);
+  date.setHours(0, 0, 0, 0);
+  return date;
+};
+
 export default {
   name: "EmployerSchedule",
   data() {
+    const monday = startOfWeekMonday(new Date());
     return {
-      templateTab: "load",
       newShiftDialog: false,
       templateDialog: false,
-      employees: [
-        {
-          name: "John Doe",
-          mon: "09:00 - 17:00\nServer",
-          wed: "09:00 - 17:00\nServer",
-        },
-        {
-          name: "Jane Smith",
-          mon: "12:00 - 20:00\nCook",
-          wed: "",
-        },
-        {
-          name: "Bob Wilson",
-          mon: "",
-          wed: "",
-        },
-        {
-          name: "Alice Johnson",
-          mon: "",
-          wed: "",
-        },
-        {
-          name: "Mike Brown",
-          mon: "",
-          wed: "",
-        },
-      ],
+      currentWeekStart: monday,
+      employees: [],
+      taskLists: [],
+      shifts: [],
+      editingShiftId: null,
+      newShift: {
+        employeeName: "",
+        position: "",
+        date: toIsoDate(monday),
+        startTime: "09:00",
+        endTime: "17:00",
+        taskListId: null,
+      },
     };
+  },
+  computed: {
+    weekDays() {
+      const labels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+      return labels.map((label, index) => {
+        const date = new Date(this.currentWeekStart);
+        date.setDate(this.currentWeekStart.getDate() + index);
+        return {
+          label,
+          dayKey: dayKeys[date.getDay()],
+          isoDate: toIsoDate(date),
+          shortDate: `${date.getMonth() + 1}/${date.getDate()}`,
+        };
+      });
+    },
+    weekLabel() {
+      return new Date(this.currentWeekStart).toLocaleDateString();
+    },
+    shiftsForCurrentWeek() {
+      const weekStart = new Date(this.currentWeekStart);
+      weekStart.setHours(0, 0, 0, 0);
+      const weekEnd = new Date(weekStart);
+      weekEnd.setDate(weekEnd.getDate() + 7);
+      return this.shifts.filter((shift) => {
+        const shiftDate = parseIsoDate(shift.date);
+        return shiftDate && shiftDate >= weekStart && shiftDate < weekEnd;
+      });
+    },
+  },
+  created() {
+    this.fetchEmployees();
+    this.fetchTaskLists();
+    this.fetchShifts();
+  },
+  methods: {
+    mapEmployee(row) {
+      return {
+        id: row.EmployeeID,
+        name: `${row.firstName} ${row.lastName}`.trim(),
+      };
+    },
+    fetchEmployees() {
+      SchedulerServices.getEmployees()
+        .then((response) => {
+          this.employees = (response.data || []).map(this.mapEmployee);
+        })
+        .catch((error) => {
+          console.log("error", error);
+        });
+    },
+    fetchTaskLists() {
+      SchedulerServices.getTaskLists()
+        .then((response) => {
+          this.taskLists = response.data || [];
+        })
+        .catch((error) => {
+          console.log("error", error);
+        });
+    },
+    fetchShifts() {
+      SchedulerServices.getShifts()
+        .then((response) => {
+          this.shifts = response.data || [];
+        })
+        .catch((error) => {
+          console.log("error", error);
+        });
+    },
+    getShiftsFor(employeeName, isoDate) {
+      return this.shiftsForCurrentWeek
+        .filter(
+          (shift) =>
+            shift.employeeName === employeeName &&
+            String(shift.date).slice(0, 10) === isoDate
+        )
+        .sort((a, b) => String(a.startTime).localeCompare(String(b.startTime)));
+    },
+    goToPreviousWeek() {
+      const next = new Date(this.currentWeekStart);
+      next.setDate(next.getDate() - 7);
+      this.currentWeekStart = next;
+    },
+    goToNextWeek() {
+      const next = new Date(this.currentWeekStart);
+      next.setDate(next.getDate() + 7);
+      this.currentWeekStart = next;
+    },
+    openNewShiftDialog() {
+      this.editingShiftId = null;
+      this.newShift = {
+        employeeName: "",
+        position: "",
+        date: this.weekDays[0].isoDate,
+        startTime: "09:00",
+        endTime: "17:00",
+        taskListId: null,
+      };
+      this.newShiftDialog = true;
+    },
+    openEditShiftDialog(shift) {
+      this.editingShiftId = shift.shiftId;
+      this.newShift = {
+        employeeName: shift.employeeName || "",
+        position: shift.position || "",
+        date: String(shift.date).slice(0, 10),
+        startTime: shift.startTime || "09:00",
+        endTime: shift.endTime || "17:00",
+        taskListId: shift.taskListId || null,
+      };
+      this.newShiftDialog = true;
+    },
+    closeShiftDialog() {
+      this.newShiftDialog = false;
+      this.editingShiftId = null;
+    },
+    deleteShift(shiftId) {
+      if (!shiftId || !window.confirm("Delete this shift?")) {
+        return;
+      }
+      SchedulerServices.deleteShift(shiftId)
+        .then(() => {
+          if (this.editingShiftId === shiftId) {
+            this.closeShiftDialog();
+          }
+          this.fetchShifts();
+        })
+        .catch((error) => {
+          console.log("error", error);
+        });
+    },
+    deleteEditingShift() {
+      this.deleteShift(this.editingShiftId);
+    },
+    saveShift() {
+      if (
+        !this.newShift.employeeName ||
+        !this.newShift.date ||
+        !this.newShift.startTime ||
+        !this.newShift.endTime
+      ) {
+        return;
+      }
+
+      const payload = {
+        ...this.newShift,
+        taskListId: this.newShift.taskListId || null,
+      };
+      const saveRequest = this.editingShiftId
+        ? SchedulerServices.updateShift(this.editingShiftId, payload)
+        : SchedulerServices.createShift(payload);
+
+      saveRequest
+        .then(() => {
+          this.closeShiftDialog();
+          this.fetchShifts();
+        })
+        .catch((error) => {
+          console.log("error", error);
+        });
+    },
   },
 };
 </script>
@@ -317,10 +412,6 @@ p {
   cursor: pointer;
 }
 
-.icon-inline.danger {
-  color: #e53935;
-}
-
 .ghost-button,
 .primary-button,
 .disabled-button {
@@ -338,17 +429,6 @@ p {
   border-color: #080c28;
   background: #060828;
   color: #fff;
-}
-
-.disabled-button {
-  background: #9b9ba6;
-  color: #fff;
-  border-color: #9b9ba6;
-}
-
-.full {
-  width: 100%;
-  justify-content: center;
 }
 
 .schedule-table-wrap {
@@ -378,15 +458,44 @@ p {
 }
 
 .shift-pill {
+  position: relative;
   border: 1px solid #adcaf9;
   background: #d8e8ff;
   border-radius: 8px;
-  padding: 8px;
+  padding: 8px 30px 8px 8px;
   white-space: pre-line;
   text-align: left;
   color: #355ea5;
   font-weight: 600;
   min-height: 50px;
+  cursor: pointer;
+}
+
+.shift-pill:hover {
+  border-color: #7da7ea;
+}
+
+.shift-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.shift-delete {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 18px;
+  height: 18px;
+  border: none;
+  border-radius: 999px;
+  background: #b2caef;
+  color: #294f8f;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  line-height: 18px;
+  text-align: center;
 }
 
 .overlay {
@@ -454,77 +563,18 @@ p {
   margin-top: 14px;
 }
 
-.template-tabs {
-  display: flex;
-  gap: 5px;
-  background: #ebeef5;
-  border-radius: 12px;
-  padding: 4px;
-  margin-bottom: 14px;
+.footer-left {
+  margin-right: auto;
 }
 
-.template-tabs button {
-  border: none;
-  background: transparent;
-  border-radius: 10px;
-  padding: 8px 10px;
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  font-weight: 700;
-}
-
-.template-tabs button.active {
-  background: #fff;
-}
-
-.template-card {
-  border: 1px solid #dde2ee;
-  border-radius: 14px;
-  padding: 14px;
-  margin-bottom: 12px;
-}
-
-.card-top {
-  display: flex;
-  justify-content: space-between;
-  gap: 8px;
+.danger-button {
+  border-color: #e2bfc2;
+  background: #fff4f4;
+  color: #9e2b33;
 }
 
 .muted {
   color: #617089;
-}
-
-.chips {
-  display: flex;
-  gap: 8px;
-  margin: 8px 0;
-}
-
-.chips span {
-  background: #dde7ff;
-  color: #4f70b7;
-  border-radius: 8px;
-  padding: 3px 9px;
-}
-
-.tip {
-  background: #e8f0ff;
-  color: #51617a;
-  border-radius: 10px;
-  padding: 12px;
-  margin-top: 12px;
-}
-
-.scroll-block {
-  max-height: 520px;
-  overflow-y: auto;
-  padding-right: 6px;
-}
-
-.preview-line {
-  margin-top: 3px;
-  color: #525f79;
 }
 
 @media (max-width: 980px) {

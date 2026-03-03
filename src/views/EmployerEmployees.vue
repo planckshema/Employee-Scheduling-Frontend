@@ -18,14 +18,14 @@
     <div class="cards-grid">
       <article
         v-for="employee in filteredEmployees"
-        :key="employee.email"
+        :key="employee.id"
         class="card"
       >
         <h3>{{ employee.name }}</h3>
         <p class="muted">{{ employee.role }}</p>
         <p><v-icon size="18">mdi-email-outline</v-icon>{{ employee.email }}</p>
         <p><v-icon size="18">mdi-phone-outline</v-icon>{{ employee.phone }}</p>
-        <button class="ghost-button full" @click="availabilityDialog = true">
+        <button class="ghost-button full" @click="openAvailability(employee)">
           View Availability
         </button>
       </article>
@@ -35,23 +35,25 @@
       <section class="modal">
         <header>
           <h2>Add Employee</h2>
-          <button class="icon-inline" @click="addEmployeeDialog = false">
+          <button class="icon-inline" @click="closeAddDialog">
             <v-icon>mdi-close</v-icon>
           </button>
         </header>
         <label>Name</label>
-        <input type="text" placeholder="John Doe" />
+        <input v-model="newEmployee.name" type="text" placeholder="John Doe" />
         <label>Email</label>
-        <input type="text" placeholder="john@example.com" />
+        <input
+          v-model="newEmployee.email"
+          type="text"
+          placeholder="john@example.com"
+        />
         <label>Phone</label>
-        <input type="text" placeholder="555-0101" />
+        <input v-model="newEmployee.phone" type="text" placeholder="555-0101" />
         <label>Position</label>
-        <input type="text" placeholder="Server" />
+        <input v-model="newEmployee.role" type="text" placeholder="Server" />
         <footer>
-          <button class="ghost-button" @click="addEmployeeDialog = false">
-            Cancel
-          </button>
-          <button class="primary-button" @click="addEmployeeDialog = false">
+          <button class="ghost-button" @click="closeAddDialog">Cancel</button>
+          <button class="primary-button" @click="saveEmployee">
             Add Employee
           </button>
         </footer>
@@ -61,7 +63,7 @@
     <div v-if="availabilityDialog" class="overlay">
       <section class="modal narrow">
         <header>
-          <h2>John Doe's Availability</h2>
+          <h2>{{ selectedEmployee.name }}'s Availability</h2>
           <button class="icon-inline" @click="availabilityDialog = false">
             <v-icon>mdi-close</v-icon>
           </button>
@@ -97,6 +99,8 @@
 </template>
 
 <script>
+import SchedulerServices from "@/services/schedulerServices";
+
 export default {
   name: "EmployerEmployees",
   data() {
@@ -104,38 +108,14 @@ export default {
       employeeSearch: "",
       addEmployeeDialog: false,
       availabilityDialog: false,
-      employees: [
-        {
-          name: "John Doe",
-          role: "Server",
-          email: "john@example.com",
-          phone: "555-0101",
-        },
-        {
-          name: "Jane Smith",
-          role: "Cook",
-          email: "jane@example.com",
-          phone: "555-0102",
-        },
-        {
-          name: "Bob Wilson",
-          role: "Server",
-          email: "bob@example.com",
-          phone: "555-0103",
-        },
-        {
-          name: "Alice Johnson",
-          role: "Bartender",
-          email: "alice@example.com",
-          phone: "555-0104",
-        },
-        {
-          name: "Mike Brown",
-          role: "Host",
-          email: "mike@example.com",
-          phone: "555-0105",
-        },
-      ],
+      selectedEmployee: { name: "Employee" },
+      employees: [],
+      newEmployee: {
+        name: "",
+        email: "",
+        phone: "",
+        role: "",
+      },
       availability: [
         { day: "Monday", time: "09:00 - 17:00" },
         { day: "Tuesday", time: "09:00 - 17:00" },
@@ -159,6 +139,60 @@ export default {
           employee.role.toLowerCase().includes(term) ||
           employee.email.toLowerCase().includes(term)
       );
+    },
+  },
+  created() {
+    this.fetchEmployees();
+  },
+  methods: {
+    mapEmployee(row) {
+      return {
+        id: row.EmployeeID,
+        name: `${row.firstName} ${row.lastName}`.trim(),
+        role: "Employee",
+        email: row.email,
+        phone: row.phoneNum,
+      };
+    },
+    fetchEmployees() {
+      SchedulerServices.getEmployees()
+        .then((response) => {
+          this.employees = (response.data || []).map(this.mapEmployee);
+        })
+        .catch((error) => {
+          console.log("error", error);
+        });
+    },
+    closeAddDialog() {
+      this.addEmployeeDialog = false;
+      this.newEmployee = { name: "", email: "", phone: "", role: "" };
+    },
+    saveEmployee() {
+      if (!this.newEmployee.name.trim() || !this.newEmployee.email.trim()) {
+        return;
+      }
+
+      const nameParts = this.newEmployee.name.trim().split(/\s+/);
+      const firstName = nameParts.shift() || "";
+      const lastName = nameParts.join(" ") || "Employee";
+
+      SchedulerServices.createEmployee({
+        firstName,
+        lastName,
+        email: this.newEmployee.email.trim(),
+        phoneNum: this.newEmployee.phone.trim(),
+      })
+        .then(() => {
+          this.closeAddDialog();
+          this.fetchEmployees();
+        })
+        .catch((error) => {
+          console.log("error", error);
+        });
+    },
+    openAvailability(employee) {
+      this.selectedEmployee = employee;
+      this.availabilityDialog = true;
     },
   },
 };

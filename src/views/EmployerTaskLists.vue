@@ -5,24 +5,24 @@
         <h2>Task Lists</h2>
         <p class="muted">Create task lists to assign to employee shifts</p>
       </div>
-      <button class="primary-button" @click="createTaskListDialog = true">
+      <button class="primary-button" @click="openCreateDialog">
         <v-icon size="18">mdi-plus</v-icon>
         New Task List
       </button>
     </div>
 
     <div class="cards-grid">
-      <article v-for="list in taskLists" :key="list.name" class="card">
+      <article v-for="list in taskLists" :key="list.taskListId" class="card">
         <div class="card-top">
           <div>
             <h3>{{ list.name }}</h3>
             <p class="muted">{{ list.description }}</p>
           </div>
           <div class="card-actions">
-            <button class="icon-inline" @click="editTaskListDialog = true">
+            <button class="icon-inline" @click="openEditDialog(list)">
               <v-icon size="18">mdi-pencil-outline</v-icon>
             </button>
-            <button class="icon-inline danger">
+            <button class="icon-inline danger" @click="removeTaskList(list)">
               <v-icon size="18">mdi-delete-outline</v-icon>
             </button>
           </div>
@@ -35,7 +35,7 @@
         </ul>
         <div class="card-footer">
           <span class="mini-tag">{{ list.items.length }} tasks</span>
-          <small>{{ list.date }}</small>
+          <small>{{ formatDate(list.date) }}</small>
         </div>
       </article>
     </div>
@@ -49,23 +49,42 @@
           </button>
         </header>
         <label>List Name</label>
-        <input type="text" placeholder="e.g., Opening Duties, Closing Duties" />
+        <input
+          v-model="createForm.name"
+          type="text"
+          placeholder="e.g., Opening Duties"
+        />
         <label>Description</label>
-        <textarea placeholder="Brief description of this task list"></textarea>
+        <textarea
+          v-model="createForm.description"
+          placeholder="Brief description of this task list"
+        ></textarea>
         <div class="inline-head">
           <label>Tasks</label>
-          <button class="ghost-button">
+          <button class="ghost-button" @click="addCreateTaskField">
             <v-icon size="18">mdi-plus</v-icon>Add Task
           </button>
         </div>
-        <div class="task-row">
-          <span>1.</span><input type="text" placeholder="Task description" />
+        <div
+          v-for="(item, index) in createForm.items"
+          :key="`new-${index}`"
+          class="task-row"
+        >
+          <span>{{ index + 1 }}.</span>
+          <input
+            v-model="createForm.items[index]"
+            type="text"
+            placeholder="Task description"
+          />
+          <button class="icon-inline" @click="removeCreateTaskField(index)">
+            <v-icon size="18">mdi-close</v-icon>
+          </button>
         </div>
         <footer>
           <button class="ghost-button" @click="createTaskListDialog = false">
             Cancel
           </button>
-          <button class="primary-button" @click="createTaskListDialog = false">
+          <button class="primary-button" @click="createTaskList">
             Create Task List
           </button>
         </footer>
@@ -81,23 +100,23 @@
           </button>
         </header>
         <label>List Name</label>
-        <input type="text" value="Opening Duties" />
+        <input v-model="editForm.name" type="text" />
         <label>Description</label>
-        <textarea>Tasks to complete at start of shift</textarea>
+        <textarea v-model="editForm.description"></textarea>
         <div class="inline-head">
           <label>Tasks</label>
-          <button class="ghost-button">
+          <button class="ghost-button" @click="addEditTaskField">
             <v-icon size="18">mdi-plus</v-icon>Add Task
           </button>
         </div>
         <div
-          v-for="(item, index) in editTaskItems"
-          :key="item"
+          v-for="(item, index) in editForm.items"
+          :key="`edit-${index}`"
           class="task-row"
         >
           <span>{{ index + 1 }}.</span>
-          <input type="text" :value="item" />
-          <button class="icon-inline">
+          <input v-model="editForm.items[index]" type="text" />
+          <button class="icon-inline" @click="removeEditTaskField(index)">
             <v-icon size="18">mdi-close</v-icon>
           </button>
         </div>
@@ -105,7 +124,7 @@
           <button class="ghost-button" @click="editTaskListDialog = false">
             Cancel
           </button>
-          <button class="primary-button" @click="editTaskListDialog = false">
+          <button class="primary-button" @click="saveTaskList">
             Save Changes
           </button>
         </footer>
@@ -115,54 +134,125 @@
 </template>
 
 <script>
+import SchedulerServices from "@/services/schedulerServices";
+
 export default {
   name: "EmployerTaskLists",
   data() {
     return {
       createTaskListDialog: false,
       editTaskListDialog: false,
-      taskLists: [
-        {
-          name: "Opening Duties",
-          description: "Tasks to complete at start of shift",
-          items: [
-            "Turn on all equipment",
-            "Check inventory levels",
-            "Set up workstation",
-            "Review daily specials",
-          ],
-          date: "1/14/2026",
-        },
-        {
-          name: "Closing Duties",
-          description: "End of shift cleanup and closing",
-          items: [
-            "Clean all surfaces",
-            "Stock supplies for next day",
-            "Take out trash",
-            "Lock all doors",
-            "Set alarm",
-          ],
-          date: "1/14/2026",
-        },
-        {
-          name: "Server Setup",
-          description: "Server station preparation",
-          items: [
-            "Stock napkins and utensils",
-            "Fill condiment stations",
-            "Check table settings",
-          ],
-          date: "1/15/2026",
-        },
-      ],
-      editTaskItems: [
-        "Turn on all equipment",
-        "Check inventory levels",
-        "Set up workstation",
-        "Review daily specials",
-      ],
+      taskLists: [],
+      createForm: {
+        name: "",
+        description: "",
+        items: [""],
+      },
+      editForm: {
+        taskListId: null,
+        name: "",
+        description: "",
+        items: [""],
+      },
     };
+  },
+  created() {
+    this.fetchTaskLists();
+  },
+  methods: {
+    fetchTaskLists() {
+      SchedulerServices.getTaskLists()
+        .then((response) => {
+          this.taskLists = response.data || [];
+        })
+        .catch((error) => {
+          console.log("error", error);
+        });
+    },
+    formatDate(value) {
+      if (!value) {
+        return "";
+      }
+      return new Date(value).toLocaleDateString();
+    },
+    openCreateDialog() {
+      this.createForm = { name: "", description: "", items: [""] };
+      this.createTaskListDialog = true;
+    },
+    addCreateTaskField() {
+      this.createForm.items.push("");
+    },
+    removeCreateTaskField(index) {
+      if (this.createForm.items.length === 1) {
+        this.createForm.items[0] = "";
+        return;
+      }
+      this.createForm.items.splice(index, 1);
+    },
+    createTaskList() {
+      if (!this.createForm.name.trim()) {
+        return;
+      }
+
+      SchedulerServices.createTaskList({
+        name: this.createForm.name.trim(),
+        description: this.createForm.description.trim(),
+        items: this.createForm.items.map((item) => item.trim()).filter(Boolean),
+      })
+        .then(() => {
+          this.createTaskListDialog = false;
+          this.fetchTaskLists();
+        })
+        .catch((error) => {
+          console.log("error", error);
+        });
+    },
+    openEditDialog(list) {
+      this.editForm = {
+        taskListId: list.taskListId,
+        name: list.name,
+        description: list.description,
+        items: list.items.length ? [...list.items] : [""],
+      };
+      this.editTaskListDialog = true;
+    },
+    addEditTaskField() {
+      this.editForm.items.push("");
+    },
+    removeEditTaskField(index) {
+      if (this.editForm.items.length === 1) {
+        this.editForm.items[0] = "";
+        return;
+      }
+      this.editForm.items.splice(index, 1);
+    },
+    saveTaskList() {
+      if (!this.editForm.taskListId || !this.editForm.name.trim()) {
+        return;
+      }
+
+      SchedulerServices.updateTaskList(this.editForm.taskListId, {
+        name: this.editForm.name.trim(),
+        description: this.editForm.description.trim(),
+        items: this.editForm.items.map((item) => item.trim()).filter(Boolean),
+      })
+        .then(() => {
+          this.editTaskListDialog = false;
+          this.fetchTaskLists();
+        })
+        .catch((error) => {
+          console.log("error", error);
+        });
+    },
+    removeTaskList(list) {
+      SchedulerServices.deleteTaskList(list.taskListId)
+        .then(() => {
+          this.fetchTaskLists();
+        })
+        .catch((error) => {
+          console.log("error", error);
+        });
+    },
   },
 };
 </script>
