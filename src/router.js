@@ -1,14 +1,13 @@
 import Vue from "vue";
 import Router from "vue-router";
 
-import Login from "./views/Login.vue";
-
-import TutorialsList from "./views/TutorialsList.vue";
-import EditTutorial from "./views/EditTutorial.vue";
-import AddTutorial from "./views/AddTutorial.vue";
-import ViewTutorial from "./views/ViewTutorial.vue";
-import AddLesson from "./views/AddLesson.vue";
-import EditLesson from "./views/EditLesson.vue";
+import RoleSelection from "./views/RoleSelection.vue";
+import EmployerDashboard from "./views/EmployerDashboard.vue";
+import EmployerSchedule from "./views/EmployerSchedule.vue";
+import EmployerEmployees from "./views/EmployerEmployees.vue";
+import EmployerTaskLists from "./views/EmployerTaskLists.vue";
+import EmployerSettings from "./views/EmployerSettings.vue";
+import EmployeeDashboard from "./views/EmployeeDashboard.vue";
 
 Vue.use(Router);
 
@@ -21,42 +20,41 @@ const router = new Router({
   routes: [
     {
       path: "/",
-      name: "login",
-      component: Login,
+      name: "roleSelection",
+      component: RoleSelection,
     },
     {
-      path: "/tutorials",
-      name: "tutorials",
-      component: TutorialsList,
+      path: "/employer",
+      name: "employerDashboard",
+      component: EmployerDashboard,
+      redirect: { name: "employerSchedule" },
+      children: [
+        {
+          path: "schedule",
+          name: "employerSchedule",
+          component: EmployerSchedule,
+        },
+        {
+          path: "employees",
+          name: "employerEmployees",
+          component: EmployerEmployees,
+        },
+        {
+          path: "tasklists",
+          name: "employerTaskLists",
+          component: EmployerTaskLists,
+        },
+        {
+          path: "settings",
+          name: "employerSettings",
+          component: EmployerSettings,
+        },
+      ],
     },
     {
-      path: "/edit/:id",
-      name: "edit",
-      component: EditTutorial,
-      props: true,
-    },
-    {
-      path: "/add",
-      name: "add",
-      component: AddTutorial,
-    },
-    {
-      path: "/view/:id",
-      name: "view",
-      component: ViewTutorial,
-      props: true,
-    },
-    {
-      path: "/addLesson/:tutorialId",
-      name: "addLesson",
-      component: AddLesson,
-      props: true,
-    },
-    {
-      path: "/editLesson/:tutorialId/:lessonId",
-      name: "editLesson",
-      component: EditLesson,
-      props: true,
+      path: "/employee",
+      name: "employeeDashboard",
+      component: EmployeeDashboard,
     },
   ],
 });

@@ -1,12 +1,15 @@
 name: Deploy to Production
 
 on:
-  push:
+  pull_request:
     branches:
       - main
+    types:
+      - closed
 
 jobs:
   aws-deploy:
+    if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
     env:
       VUE_APP_CLIENT_ID: ${{secrets.VUE_APP_CLIENT_ID}}
@@ -29,6 +32,18 @@ jobs:
       - run: npm install
       - run: npm run build
       - run: npm run bundle
+
+      - name: Prepare remote deploy directory permissions
+        uses: JimCronqvist/action-ssh@master
+        with:
+          hosts: "ubuntu@project3.eaglesoftwareteam.com"
+          privateKey: ${{ secrets.SERVER_SSH_KEY }}
+          debug: false
+          command: |
+            sudo mkdir -p /var/www/html/sev2026/t8
+            sudo chown -R ubuntu:www-data /var/www/html/sev2026/t8
+            sudo find /var/www/html/sev2026/t8 -type d -exec chmod 775 {} \;
+            sudo find /var/www/html/sev2026/t8 -type f -exec chmod 664 {} \;
 
       - name: Deploy to Server
         uses: easingthemes/ssh-deploy@v2.1.1
