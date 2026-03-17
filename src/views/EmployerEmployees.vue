@@ -24,10 +24,18 @@
         <h3>{{ employee.name }}</h3>
         <p class="muted">{{ employee.role }}</p>
         <p><v-icon size="18">mdi-email-outline</v-icon>{{ employee.email }}</p>
-        <p><v-icon size="18">mdi-phone-outline</v-icon>{{ employee.phone }}</p>
-        <button class="ghost-button full" @click="availabilityDialog = true">
-          View Availability
-        </button>
+
+        <p><v-icon size="18">mdi-phone-outline</v-icon>{{ employee.phoneNum }}</p>
+
+        <div class="card-actions">
+          <button class="ghost-button view-btn" @click="viewAvailability(employee)">
+            View Availability
+          </button>
+
+          <button class="delete-icon-btn" @click="deleteEmployee(employee.EmployeeID)">
+            <v-icon size="20" color="red">mdi-trash-can-outline</v-icon>
+          </button>
+        </div>
       </article>
     </div>
 
@@ -35,24 +43,33 @@
       <section class="modal">
         <header>
           <h2>Add Employee</h2>
-          <button class="icon-inline" @click="addEmployeeDialog = false">
+          <button class="icon-inline" @click="closeAddDialog">
             <v-icon>mdi-close</v-icon>
           </button>
         </header>
-        <label>Name</label>
-        <input type="text" placeholder="John Doe" />
+        <v-row>
+          <v-col cols="6">
+            <label>First Name</label>
+            <input v-model="newEmployee.fName" type="text" placeholder="John" />
+          </v-col>
+          <v-col cols="6">
+            <label>Last Name</label>
+            <input v-model="newEmployee.lName" type="text" placeholder="Doe" />
+          </v-col>
+        </v-row>
+
         <label>Email</label>
-        <input type="text" placeholder="john@example.com" />
+        <input v-model="newEmployee.email" type="text" placeholder="john@example.com" />
+
         <label>Phone</label>
-        <input type="text" placeholder="555-0101" />
-        <label>Position</label>
-        <input type="text" placeholder="Server" />
+        <input v-model="newEmployee.phoneNum" type="text" placeholder="555-0101" />
+
         <footer>
-          <button class="ghost-button" @click="addEmployeeDialog = false">
+          <button class="ghost-button" @click="closeAddDialog">
             Cancel
           </button>
-          <button class="primary-button" @click="addEmployeeDialog = false">
-            Add Employee
+          <button class="primary-button" @click="saveEmployee">
+            Save Employee
           </button>
         </footer>
       </section>
@@ -61,7 +78,7 @@
     <div v-if="availabilityDialog" class="overlay">
       <section class="modal narrow">
         <header>
-          <h2>John Doe's Availability</h2>
+          <h2>{{ selectedEmployee.firstName }}'s Availability</h2>
           <button class="icon-inline" @click="availabilityDialog = false">
             <v-icon>mdi-close</v-icon>
           </button>
@@ -75,28 +92,14 @@
           <strong>{{ day.day }}</strong>
           <span>{{ day.time }}</span>
         </article>
-
-        <h3>Time-Off Requests</h3>
-        <article class="timeoff-row">
-          <div>
-            <strong>2026-02-01</strong>
-            <p class="muted">Vacation</p>
-          </div>
-          <span class="status approved">approved</span>
-        </article>
-        <article class="timeoff-row">
-          <div>
-            <strong>2026-02-15</strong>
-            <p class="muted">Doctor appointment</p>
-          </div>
-          <span class="status pending">pending</span>
-        </article>
       </section>
     </div>
   </section>
 </template>
 
 <script>
+import EmployeeServices from "@/services/employeeServices";
+
 export default {
   name: "EmployerEmployees",
   data() {
@@ -104,38 +107,14 @@ export default {
       employeeSearch: "",
       addEmployeeDialog: false,
       availabilityDialog: false,
-      employees: [
-        {
-          name: "John Doe",
-          role: "Server",
-          email: "john@example.com",
-          phone: "555-0101",
-        },
-        {
-          name: "Jane Smith",
-          role: "Cook",
-          email: "jane@example.com",
-          phone: "555-0102",
-        },
-        {
-          name: "Bob Wilson",
-          role: "Server",
-          email: "bob@example.com",
-          phone: "555-0103",
-        },
-        {
-          name: "Alice Johnson",
-          role: "Bartender",
-          email: "alice@example.com",
-          phone: "555-0104",
-        },
-        {
-          name: "Mike Brown",
-          role: "Host",
-          email: "mike@example.com",
-          phone: "555-0105",
-        },
-      ],
+      employees: [],
+      selectedEmployee: {},
+      newEmployee: {
+        fName: "",
+        lName: "",
+        email: "",
+        phoneNum: ""
+      },
       availability: [
         { day: "Monday", time: "09:00 - 17:00" },
         { day: "Tuesday", time: "09:00 - 17:00" },
@@ -150,17 +129,58 @@ export default {
   computed: {
     filteredEmployees() {
       const term = this.employeeSearch.toLowerCase().trim();
-      if (!term) {
-        return this.employees;
-      }
-      return this.employees.filter(
-        (employee) =>
-          employee.name.toLowerCase().includes(term) ||
-          employee.role.toLowerCase().includes(term) ||
-          employee.email.toLowerCase().includes(term)
+      if (!term) return this.employees;
+
+      return this.employees.filter(employee =>
+        (employee.fName && employee.fName.toLowerCase().includes(term)) ||
+        (employee.lName && employee.lName.toLowerCase().includes(term)) ||
+        (employee.email && employee.email.toLowerCase().includes(term))
       );
-    },
+    }
   },
+  mounted() {
+    this.retrieveEmployees();
+  },
+  methods: {
+    deleteEmployee(id) {
+      if (confirm("Are you sure you want to delete this employee?")) {
+        EmployeeServices.deleteEmployee(id)
+          .then(() => {
+            this.retrieveEmployees(); // Refresh the list from the DB
+          })
+          .catch((e) => {
+            console.error("Delete failed:", e);
+          });
+      }
+    },
+    retrieveEmployees() {
+      EmployeeServices.getAllEmployees()
+        .then(response => {
+          this.employees = response.data;
+        })
+        .catch(e => {
+          console.error("Error fetching employees:", e);
+        });
+    },
+    saveEmployee() {
+      EmployeeServices.createEmployee(this.newEmployee)
+        .then(() => {
+          this.retrieveEmployees(); // Refresh the list
+          this.closeAddDialog();
+        })
+        .catch(e => {
+          console.error("Error saving employee:", e);
+        });
+    },
+    closeAddDialog() {
+      this.addEmployeeDialog = false;
+      this.newEmployee = { fName: "", lName: "", email: "", phoneNum: "" };
+    },
+    viewAvailability(employee) {
+      this.selectedEmployee = employee;
+      this.availabilityDialog = true;
+    }
+  }
 };
 </script>
 
@@ -252,6 +272,7 @@ p {
   display: inline-flex;
   align-items: center;
   gap: 8px;
+  cursor: pointer;
 }
 
 .primary-button {
@@ -278,7 +299,7 @@ p {
 
 .modal {
   width: 100%;
-  max-width: 900px;
+  max-width: 600px;
   background: #fff;
   border-radius: 18px;
   padding: 22px;
@@ -298,7 +319,7 @@ p {
 }
 
 .modal label {
-  font-size: 20px;
+  font-size: 16px;
   font-weight: 700;
   margin-top: 10px;
   margin-bottom: 6px;
@@ -323,8 +344,7 @@ p {
   margin-top: 14px;
 }
 
-.availability-row,
-.timeoff-row {
+.availability-row {
   border: 1px solid #dce1ec;
   border-radius: 12px;
   padding: 10px 12px;
@@ -334,28 +354,37 @@ p {
   margin-bottom: 8px;
 }
 
-.status {
-  border-radius: 999px;
-  padding: 3px 10px;
-  font-size: 13px;
-  font-weight: 700;
+.card-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+  align-items: center;
 }
 
-.status.approved {
-  background: #060828;
-  color: #fff;
+.view-btn {
+  flex-grow: 1;
+  justify-content: center;
 }
 
-.status.pending {
-  background: #eceff5;
-  color: #293850;
+.delete-icon-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #fff1f1;
+  border: 1px solid #ffcccc;
+  border-radius: 12px;
+  width: 44px;
+  height: 44px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.delete-icon-btn:hover {
+  background: #ffe0e0;
+  border-color: #ffb3b3;
 }
 
 @media (max-width: 980px) {
-  .tab-content {
-    padding: 0 14px 16px;
-  }
-
   .toolbar-row {
     flex-direction: column;
     align-items: flex-start;
