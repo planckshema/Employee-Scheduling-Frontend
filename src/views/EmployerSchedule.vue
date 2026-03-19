@@ -182,8 +182,13 @@ export default {
 
     getShiftStyle(shift) {
       const getDecimalHour = (timeStr) => {
-        const parts = timeStr.includes("T") ? timeStr.split("T")[1].split(":") : timeStr.split(":");
-        return parseInt(parts[0]) + (parseInt(parts[1]) / 60);
+        // If timeStr is null, undefined, or not a string, return 0 to prevent a crash
+        if (!timeStr || typeof timeStr !== 'string') return 0;
+
+        // Check if it's an ISO string or just HH:mm
+        const time = timeStr.includes('T') ? timeStr.split('T')[1] : timeStr;
+        const [hours, minutes] = time.split(':').map(Number);
+        return hours + (minutes / 60);
       };
 
       const start = getDecimalHour(shift.startTime);
@@ -236,9 +241,42 @@ export default {
     prevWeek() { this.currentMonday = new Date(this.currentMonday.setDate(this.currentMonday.getDate() - 7)); },
 
     async handleApplyTemplate(template) {
-      console.log("Applying template:", template);
-      // We will write the heavy lifting logic here next!
-      this.templateDialog = false;
+      if (!confirm(`Apply "${template.name}" to this week? This will add ${template.shifts.length} shifts.`)) return;
+
+      try {
+        // 1. Get the Monday of the week currently being viewed
+        const startOfWeek = new Date(this.currentMonday);
+
+        // 2. Map template shifts to REAL shifts
+        const newShifts = template.shifts.map(ts => {
+          const shiftDate = new Date(startOfWeek);
+          const fullStart = `${shiftDate.toISOString().split('T')[0]}T${ts.startTime}`;
+
+          shiftDate.setDate(shiftDate.getDate() + ts.dayOfWeek);
+
+          return {
+            EmployeeID: ts.EmployeeID,
+            position: ts.position,
+            startDate: shiftDate.toISOString().split('T')[0], // YYYY-MM-DD
+            startTime: fullStart,
+            endTime: `${shiftDate.toISOString().split('T')[0]}T${ts.endTime}`,
+          };
+        });
+
+        // 3. Send to your ACTUAL Shift Service (not TemplateService)
+        // Check if your ShiftService has a bulkCreate, otherwise loop it:
+        for (const shift of newShifts) {
+          await ShiftServices.createShift(shift);
+        }
+
+        this.loadData(); // Refresh the calendar
+        this.templateDialog = false; // Close modal
+        alert("Template applied successfully!");
+
+      } catch (err) {
+        console.error("Error applying template:", err);
+        alert("Failed to apply some shifts.");
+      }
     },
   }
 };

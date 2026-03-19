@@ -13,7 +13,7 @@ export default{
 
   // Save a new template (name + array of shifts)
   createTemplate(data) {
-    return apiClient.get("/templates", data);
+    return apiClient.post("/templates", data);
   },
 
   // Delete a template
