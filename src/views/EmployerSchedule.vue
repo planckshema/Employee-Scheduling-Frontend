@@ -98,6 +98,9 @@
 
     <ShiftDetails :show="detailDialog" :shift="selectedShift" :employeeName="getEmployeeName(selectedShift.EmployeeID)"
       @close="detailDialog = false" @delete="deleteShift" />
+
+    <EmployerTemplate :show="templateDialog" :currentWeekShifts="shifts" :currentMonday="currentMonday"
+      @close="templateDialog = false" @apply="handleApplyTemplate" />
   </section>
 </template>
 
@@ -105,11 +108,17 @@
 // ... Imports stay the same ...
 import EmployeeServices from "@/services/employeeServices";
 import ShiftServices from "@/services/shiftServices";
+import TemplateServices from "@/services/templateServices";
 import ShiftDetails from "./ShiftDetails.vue";
+import EmployerTemplate from "./EmployerTemplate.vue";
+
 
 export default {
   name: "EmployerSchedule",
-  components: { ShiftDetails },
+  components: {
+    ShiftDetails,
+    EmployerTemplate,
+  },
   data() {
     return {
       newShiftDialog: false,
@@ -224,7 +233,13 @@ export default {
       return p;
     },
     nextWeek() { this.currentMonday = new Date(this.currentMonday.setDate(this.currentMonday.getDate() + 7)); },
-    prevWeek() { this.currentMonday = new Date(this.currentMonday.setDate(this.currentMonday.getDate() - 7)); }
+    prevWeek() { this.currentMonday = new Date(this.currentMonday.setDate(this.currentMonday.getDate() - 7)); },
+
+    async handleApplyTemplate(template) {
+      console.log("Applying template:", template);
+      // We will write the heavy lifting logic here next!
+      this.templateDialog = false;
+    },
   }
 };
 </script>

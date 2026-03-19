@@ -47,17 +47,20 @@
       "node": true
     },
     "extends": [
-      "plugin:vue/recommended",
-      "eslint:recommended",
-      "prettier/vue",
-      "plugin:prettier/recommended"
+      "plugin:vue/essential",
+      "eslint:recommended"
     ],
     "parserOptions": {
-      "parser": "@babel/eslint-parser"
+      "parser": "@babel/eslint-parser",
+      "requireConfigFile": false,
+      "ecmaVersion": 2020,
+      "sourceType": "module"
     },
     "rules": {
-      "vue/multi-word-component-names": "off",
-      "vue/no-v-text-v-html-on-component": "off"
+      "no-unused-vars": "off",
+      "vue/no-unused-vars": "off",
+      "no-console": "off",
+      "prettier/prettier": 0
     }
   },
   "browserslist": [
