@@ -25,14 +25,22 @@
         <p class="muted">{{ employee.role }}</p>
         <p><v-icon size="18">mdi-email-outline</v-icon>{{ employee.email }}</p>
 
-        <p><v-icon size="18">mdi-phone-outline</v-icon>{{ employee.phoneNum }}</p>
+        <p>
+          <v-icon size="18">mdi-phone-outline</v-icon>{{ employee.phoneNum }}
+        </p>
 
         <div class="card-actions">
-          <button class="ghost-button view-btn" @click="viewAvailability(employee)">
+          <button
+            class="ghost-button view-btn"
+            @click="viewAvailability(employee)"
+          >
             View Availability
           </button>
 
-          <button class="delete-icon-btn" @click="deleteEmployee(employee.EmployeeID)">
+          <button
+            class="delete-icon-btn"
+            @click="deleteEmployee(employee.EmployeeID)"
+          >
             <v-icon size="20" color="red">mdi-trash-can-outline</v-icon>
           </button>
         </div>
@@ -59,15 +67,21 @@
         </v-row>
 
         <label>Email</label>
-        <input v-model="newEmployee.email" type="text" placeholder="john@example.com" />
+        <input
+          v-model="newEmployee.email"
+          type="text"
+          placeholder="john@example.com"
+        />
 
         <label>Phone</label>
-        <input v-model="newEmployee.phoneNum" type="text" placeholder="555-0101" />
+        <input
+          v-model="newEmployee.phoneNum"
+          type="text"
+          placeholder="555-0101"
+        />
 
         <footer>
-          <button class="ghost-button" @click="closeAddDialog">
-            Cancel
-          </button>
+          <button class="ghost-button" @click="closeAddDialog">Cancel</button>
           <button class="primary-button" @click="saveEmployee">
             Save Employee
           </button>
@@ -113,7 +127,7 @@ export default {
         fName: "",
         lName: "",
         email: "",
-        phoneNum: ""
+        phoneNum: "",
       },
       availability: [
         { day: "Monday", time: "09:00 - 17:00" },
@@ -131,12 +145,13 @@ export default {
       const term = this.employeeSearch.toLowerCase().trim();
       if (!term) return this.employees;
 
-      return this.employees.filter(employee =>
-        (employee.fName && employee.fName.toLowerCase().includes(term)) ||
-        (employee.lName && employee.lName.toLowerCase().includes(term)) ||
-        (employee.email && employee.email.toLowerCase().includes(term))
+      return this.employees.filter(
+        (employee) =>
+          (employee.fName && employee.fName.toLowerCase().includes(term)) ||
+          (employee.lName && employee.lName.toLowerCase().includes(term)) ||
+          (employee.email && employee.email.toLowerCase().includes(term))
       );
-    }
+    },
   },
   mounted() {
     this.retrieveEmployees();
@@ -155,10 +170,10 @@ export default {
     },
     retrieveEmployees() {
       EmployeeServices.getAllEmployees()
-        .then(response => {
+        .then((response) => {
           this.employees = response.data;
         })
-        .catch(e => {
+        .catch((e) => {
           console.error("Error fetching employees:", e);
         });
     },
@@ -168,7 +183,7 @@ export default {
           this.retrieveEmployees(); // Refresh the list
           this.closeAddDialog();
         })
-        .catch(e => {
+        .catch((e) => {
           console.error("Error saving employee:", e);
         });
     },
@@ -179,8 +194,8 @@ export default {
     viewAvailability(employee) {
       this.selectedEmployee = employee;
       this.availabilityDialog = true;
-    }
-  }
+    },
+  },
 };
 </script>
 
