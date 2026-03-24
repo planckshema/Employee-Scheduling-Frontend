@@ -5,21 +5,14 @@
         <h1>Employer Dashboard</h1>
         <p>Manage your team's schedule</p>
       </div>
-      <button
-        class="ghost-button"
-        @click="$router.push({ name: 'employeeDashboard' })"
-      >
+      <button class="ghost-button" @click="$router.push({ name: 'employeeDashboard' })">
         Switch View
       </button>
     </header>
 
     <nav class="tabs">
-      <button
-        v-for="tab in tabs"
-        :key="tab.key"
-        :class="['tab', { active: currentTab === tab.key }]"
-        @click="$router.push({ name: tab.routeName })"
-      >
+      <button v-for="tab in tabs" :key="tab.key" :class="['tab', { active: currentTab === tab.key }]"
+        @click="$router.push({ name: tab.routeName })">
         <v-icon size="18">{{ tab.icon }}</v-icon>
         {{ tab.label }}
       </button>
@@ -48,6 +41,12 @@ export default {
           routeName: "employerEmployees",
         },
         {
+          key: "trades", // New Key
+          label: "Trade Board",
+          icon: "mdi-swap-horizontal", // New Icon
+          routeName: "tradeRequestShifts", // Ensure this matches your router/index.js name
+        },
+        {
           key: "taskLists",
           label: "Task Lists",
           icon: "mdi-clipboard-text-outline",
@@ -67,6 +66,7 @@ export default {
       const map = {
         employerSchedule: "schedule",
         employerEmployees: "employees",
+        tradeRequestShifts: "trades",
         employerTaskLists: "taskLists",
         employerSettings: "settings",
       };
