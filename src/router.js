@@ -8,6 +8,7 @@ import EmployerEmployees from "./views/EmployerEmployees.vue";
 import EmployerTaskLists from "./views/EmployerTaskLists.vue";
 import EmployerSettings from "./views/EmployerSettings.vue";
 import EmployeeDashboard from "./views/EmployeeDashboard.vue";
+import EmployerTradeboard from "./views/EmployerTradeboard.vue";
 
 Vue.use(Router);
 
@@ -38,6 +39,11 @@ const router = new Router({
           path: "employees",
           name: "employerEmployees",
           component: EmployerEmployees,
+        },
+        {
+          path: 'trades',
+          name: 'tradeRequestShifts',
+          component: EmployerTradeboard, // The new file we wrote!
         },
         {
           path: "tasklists",
