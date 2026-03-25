@@ -5,9 +5,9 @@ import Router from "../router.js";
 
 var baseurl = "";
 if (process.env.NODE_ENV === "development") {
-  baseurl = "http://localhost/tutorial/";
+  baseurl = "http://localhost:3100/worker_scheduling/";
 } else {
-  baseurl = "/tutorial/";
+  baseurl = "/worker_scheduling/";
 }
 
 const apiClient = axios.create({
