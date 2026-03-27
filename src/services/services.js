@@ -3,15 +3,22 @@ import Utils from "@/config/utils.js";
 import AuthServices from "./authServices.js";
 import Router from "../router.js";
 
-const configuredBaseUrl = (process.env.VUE_APP_API_URL || "").trim();
-const defaultDevBaseUrl = "http://localhost:3100/tutorial/";
-const defaultProdBaseUrl = "/tutorial/";
+const configuredBaseUrl = (
+  import.meta.env.VITE_API_URL ||
+  import.meta.env.VUE_APP_API_URL ||
+  ""
+).trim();
+const defaultDevBaseUrl = "http://localhost:3100";
+const defaultProdBaseUrl = "/";
 
-const baseurl =
+const rawBaseUrl =
   configuredBaseUrl ||
-  (process.env.NODE_ENV === "development"
+  (import.meta.env.DEV
     ? defaultDevBaseUrl
     : defaultProdBaseUrl);
+
+const baseurl =
+  rawBaseUrl === "/" ? rawBaseUrl : rawBaseUrl.replace(/\/+$/, "");
 
 const apiClient = axios.create({
   baseURL: baseurl,
@@ -19,18 +26,6 @@ const apiClient = axios.create({
     Accept: "application/json",
     "Content-Type": "application/json",
     "X-Requested-With": "XMLHttpRequest",
-    "Access-Control-Allow-Origin": "*",
-    crossDomain: true,
-  },
-  transformRequest: (data, headers) => {
-    const user = Utils.getStore("user");
-    if (user != null) {
-      const token = user.token;
-      let authHeader = "";
-      if (token != null && token !== "") authHeader = "Bearer " + token;
-      headers.common["Authorization"] = authHeader;
-    }
-    return JSON.stringify(data);
   },
   transformResponse: (data) => {
     if (!data) {
@@ -51,7 +46,7 @@ const apiClient = axios.create({
       AuthServices.logoutUser(Utils.getStore("user"))
         .then(() => {
           Utils.removeItem("user");
-          Router.push({ name: "roleSelection" });
+          Router.push({ name: "login" });
         })
         .catch((error) => {
           console.log("error", error);
@@ -60,6 +55,18 @@ const apiClient = axios.create({
 
     return parsed;
   },
+});
+
+apiClient.interceptors.request.use((config) => {
+  const user = Utils.getStore("user");
+  const token = user?.token;
+
+  if (token) {
+    config.headers = config.headers || {};
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+
+  return config;
 });
 
 export default apiClient;

@@ -27,7 +27,8 @@ export default {
   methods: {
     async loginWithGoogle() {
       global.handleCredentialResponse = this.handleCredentialResponse;
-      const client = process.env.VUE_APP_CLIENT_ID;
+      const client =
+        import.meta.env.VITE_CLIENT_ID || import.meta.env.VUE_APP_CLIENT_ID;
       console.log(client);
       global.google.accounts.id.initialize({
         client_id: client,
