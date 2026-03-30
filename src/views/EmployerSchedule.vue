@@ -127,6 +127,7 @@ export default {
       employees: [],
       shifts: [],
       selectedShift: {},
+      reminderInterval: null,
       // Start time is 8 (8 AM), End time is 22 (10 PM)
       timeSlots: [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22],
       currentMonday: new Date("2026-01-26T00:00:00"),
@@ -160,125 +161,172 @@ export default {
       return `Week of ${monthName} ${d.getDate()}, ${d.getFullYear()}`;
     }
   },
-  mounted() {
-    this.loadData();
+async mounted() {
+  await this.requestNotificationPermission();
+  await this.loadData();
+
+  this.checkShiftReminders();
+
+  this.reminderInterval = setInterval(() => {
+    this.checkShiftReminders();
+  }, 60000);
+},
+
+beforeDestroy() {
+  if (this.reminderInterval) {
+    clearInterval(this.reminderInterval);
+  }
+},
+
+methods: {
+  async loadData() {
+    try {
+      const [empRes, shiftRes] = await Promise.all([
+        EmployeeServices.getAllEmployees(),
+        ShiftServices.getAllShifts(),
+      ]);
+      this.employees = empRes.data || [];
+      this.shifts = shiftRes.data || [];
+    } catch (err) { console.error(err); }
   },
-  methods: {
-    async loadData() {
-      try {
-        const [empRes, shiftRes] = await Promise.all([
-          EmployeeServices.getAllEmployees(),
-          ShiftServices.getAllShifts(),
-        ]);
-        this.employees = empRes.data || [];
-        this.shifts = shiftRes.data || [];
-      } catch (err) { console.error(err); }
-    },
 
-    getShiftsForDay(date) {
-      if (!this.shifts) return [];
-      return this.shifts.filter(s => s.startDate && s.startDate.split('T')[0] === date);
-    },
+  async requestNotificationPermission() {
+    if ("Notification" in window && Notification.permission !== "granted") {
+      await Notification.requestPermission();
+    }
+  },
 
-    getShiftStyle(shift) {
-      const getDecimalHour = (timeStr) => {
-        // If timeStr is null, undefined, or not a string, return 0 to prevent a crash
-        if (!timeStr || typeof timeStr !== 'string') return 0;
+  checkShiftReminders() {
+    if (!this.shifts || !this.shifts.length) return;
+    if (!("Notification" in window)) return;
+    if (Notification.permission !== "granted") return;
 
-        // Check if it's an ISO string or just HH:mm
-        const time = timeStr.includes('T') ? timeStr.split('T')[1] : timeStr;
-        const [hours, minutes] = time.split(':').map(Number);
-        return hours + (minutes / 60);
-      };
+    const now = new Date();
 
-      const start = getDecimalHour(shift.startTime);
-      const end = getDecimalHour(shift.endTime);
-      const rowHeight = 80; // Must match .grid-cell height in CSS
+    this.shifts.forEach((shift) => {
+      if (!shift.startTime) return;
 
-      return {
-        top: `${(start - 8) * rowHeight}px`,
-        height: `${(end - start) * rowHeight}px`,
-      };
-    },
+      const shiftStart = new Date(shift.startTime);
+      const diffMinutes = Math.floor((shiftStart - now) / 1000 / 60);
+      const key = `reminder_${shift.shiftId}`;
 
-    getEmployeeName(id) {
-      if (!id) return "Unassigned";
-      const emp = this.employees.find((e) => String(e.id || e.EmployeeID) === String(id));
-      return emp ? `${emp.fName || emp.firstName} ${emp.lName || emp.lastName}` : "Unassigned";
-    },
-
-    viewShift(shift) {
-      this.selectedShift = shift;
-      this.detailDialog = true;
-    },
-
-    async saveShift() {
-      try {
-        const payload = { ...this.currentShift, startTime: `${this.currentShift.startDate}T${this.currentShift.startTime}:00`, endTime: `${this.currentShift.startDate}T${this.currentShift.endTime}:00` };
-        await ShiftServices.createShift(payload);
-        this.newShiftDialog = false;
-        await this.loadData();
-      } catch (err) { console.error(err); }
-    },
-
-    async deleteShift(id) {
-      if (confirm("Delete this shift?")) {
-        try {
-          await ShiftServices.deleteShift(id);
-          this.detailDialog = false;
-          await this.loadData();
-        } catch (err) { console.error(err); }
-      }
-    },
-
-    formatHour(h) { return `${h % 12 || 12} ${h >= 12 ? "PM" : "AM"}`; },
-    formatTime(t) {
-      if (!t) return "";
-      const p = t.includes("T") ? t.split("T")[1].substring(0, 5) : t.substring(0, 5);
-      return p;
-    },
-    nextWeek() { this.currentMonday = new Date(this.currentMonday.setDate(this.currentMonday.getDate() + 7)); },
-    prevWeek() { this.currentMonday = new Date(this.currentMonday.setDate(this.currentMonday.getDate() - 7)); },
-
-    async handleApplyTemplate(template) {
-      if (!confirm(`Apply "${template.name}" to this week? This will add ${template.shifts.length} shifts.`)) return;
-
-      try {
-        // 1. Get the Monday of the week currently being viewed
-        const startOfWeek = new Date(this.currentMonday);
-
-        // 2. Map template shifts to REAL shifts
-        const newShifts = template.shifts.map(ts => {
-          const shiftDate = new Date(startOfWeek);
-          const fullStart = `${shiftDate.toISOString().split('T')[0]}T${ts.startTime}`;
-
-          shiftDate.setDate(shiftDate.getDate() + ts.dayOfWeek);
-
-          return {
-            EmployeeID: ts.EmployeeID,
-            position: ts.position,
-            startDate: shiftDate.toISOString().split('T')[0], // YYYY-MM-DD
-            startTime: fullStart,
-            endTime: `${shiftDate.toISOString().split('T')[0]}T${ts.endTime}`,
-          };
+      if (
+        diffMinutes <= 30 &&
+        diffMinutes >= 0 &&
+        !localStorage.getItem(key)
+      ) {
+        new Notification("Shift Reminder", {
+          body: `${this.getEmployeeName(shift.EmployeeID)} starts at ${this.formatTime(shift.startTime)}`
         });
 
-        // 3. Send to your ACTUAL Shift Service (not TemplateService)
-        // Check if your ShiftService has a bulkCreate, otherwise loop it:
-        for (const shift of newShifts) {
-          await ShiftServices.createShift(shift);
-        }
-
-        this.loadData(); // Refresh the calendar
-        this.templateDialog = false; // Close modal
-        alert("Template applied successfully!");
-
-      } catch (err) {
-        console.error("Error applying template:", err);
-        alert("Failed to apply some shifts.");
+        localStorage.setItem(key, "sent");
       }
-    },
-  }
+    });
+  },
+
+  getShiftsForDay(date) {
+    if (!this.shifts) return [];
+    return this.shifts.filter(s => s.startDate && s.startDate.split('T')[0] === date);
+  },
+
+  getShiftStyle(shift) {
+    const getDecimalHour = (timeStr) => {
+      // If timeStr is null, undefined, or not a string, return 0 to prevent a crash
+      if (!timeStr || typeof timeStr !== 'string') return 0;
+
+      // Check if it's an ISO string or just HH:mm
+      const time = timeStr.includes('T') ? timeStr.split('T')[1] : timeStr;
+      const [hours, minutes] = time.split(':').map(Number);
+      return hours + (minutes / 60);
+    };
+
+    const start = getDecimalHour(shift.startTime);
+    const end = getDecimalHour(shift.endTime);
+    const rowHeight = 80; // Must match .grid-cell height in CSS
+
+    return {
+      top: `${(start - 8) * rowHeight}px`,
+      height: `${(end - start) * rowHeight}px`,
+    };
+  },
+
+  getEmployeeName(id) {
+    if (!id) return "Unassigned";
+    const emp = this.employees.find((e) => String(e.id || e.EmployeeID) === String(id));
+    return emp ? `${emp.fName || emp.firstName} ${emp.lName || emp.lastName}` : "Unassigned";
+  },
+
+  viewShift(shift) {
+    this.selectedShift = shift;
+    this.detailDialog = true;
+  },
+
+  async saveShift() {
+    try {
+      const payload = { ...this.currentShift, startTime: `${this.currentShift.startDate}T${this.currentShift.startTime}:00`, endTime: `${this.currentShift.startDate}T${this.currentShift.endTime}:00` };
+      await ShiftServices.createShift(payload);
+      this.newShiftDialog = false;
+      await this.loadData();
+    } catch (err) { console.error(err); }
+  },
+
+  async deleteShift(id) {
+    if (confirm("Delete this shift?")) {
+      try {
+        await ShiftServices.deleteShift(id);
+        this.detailDialog = false;
+        await this.loadData();
+      } catch (err) { console.error(err); }
+    }
+  },
+
+  formatHour(h) { return `${h % 12 || 12} ${h >= 12 ? "PM" : "AM"}`; },
+  formatTime(t) {
+    if (!t) return "";
+    const p = t.includes("T") ? t.split("T")[1].substring(0, 5) : t.substring(0, 5);
+    return p;
+  },
+  nextWeek() { this.currentMonday = new Date(this.currentMonday.setDate(this.currentMonday.getDate() + 7)); },
+  prevWeek() { this.currentMonday = new Date(this.currentMonday.setDate(this.currentMonday.getDate() - 7)); },
+
+  async handleApplyTemplate(template) {
+    if (!confirm(`Apply "${template.name}" to this week? This will add ${template.shifts.length} shifts.`)) return;
+
+    try {
+      // 1. Get the Monday of the week currently being viewed
+      const startOfWeek = new Date(this.currentMonday);
+
+      // 2. Map template shifts to REAL shifts
+      const newShifts = template.shifts.map(ts => {
+        const shiftDate = new Date(startOfWeek);
+        shiftDate.setDate(shiftDate.getDate() + ts.dayOfWeek);
+        const fullStart = `${shiftDate.toISOString().split('T')[0]}T${ts.startTime}`;
+
+        return {
+          EmployeeID: ts.EmployeeID,
+          position: ts.position,
+          startDate: shiftDate.toISOString().split('T')[0], // YYYY-MM-DD
+          startTime: fullStart,
+          endTime: `${shiftDate.toISOString().split('T')[0]}T${ts.endTime}`,
+        };
+      });
+
+      // 3. Send to your ACTUAL Shift Service (not TemplateService)
+      // Check if your ShiftService has a bulkCreate, otherwise loop it:
+      for (const shift of newShifts) {
+        await ShiftServices.createShift(shift);
+      }
+
+      this.loadData(); // Refresh the calendar
+      this.templateDialog = false; // Close modal
+      alert("Template applied successfully!");
+
+    } catch (err) {
+      console.error("Error applying template:", err);
+      alert("Failed to apply some shifts.");
+    }
+  },
+}
 };
 </script>
 
