@@ -110,11 +110,6 @@ router.beforeEach((to, from, next) => {
   const user = Utils.getStore("user");
   const isLoggedIn = Boolean(user && user.token);
 
-  if (to.name === "login" && isLoggedIn) {
-    next({ name: "roleSelection" });
-    return;
-  }
-
   if (to.name !== "login" && !isLoggedIn) {
     next({ name: "login" });
     return;
