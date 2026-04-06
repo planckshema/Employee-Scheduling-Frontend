@@ -8,14 +8,25 @@ const configuredBaseUrl = (
   import.meta.env.VUE_APP_API_URL ||
   ""
 ).trim();
-const defaultDevBaseUrl = "http://localhost:3100";
-const defaultProdBaseUrl = "/";
+const defaultDevBaseUrl = "http://localhost:3100/tutorial";
+const defaultProdBaseUrl = "/tutorial";
 
-const rawBaseUrl =
-  configuredBaseUrl ||
-  (import.meta.env.DEV
-    ? defaultDevBaseUrl
-    : defaultProdBaseUrl);
+const normalizeBaseUrl = (url) => {
+  if (!url) {
+    return url;
+  }
+
+  const trimmedUrl = url.replace(/\/+$/, "");
+  return trimmedUrl.endsWith("/tutorial")
+    ? trimmedUrl
+    : `${trimmedUrl}/tutorial`;
+};
+
+const rawBaseUrl = configuredBaseUrl
+  ? normalizeBaseUrl(configuredBaseUrl)
+  : (import.meta.env.DEV
+      ? defaultDevBaseUrl
+      : defaultProdBaseUrl);
 
 const baseurl =
   rawBaseUrl === "/" ? rawBaseUrl : rawBaseUrl.replace(/\/+$/, "");

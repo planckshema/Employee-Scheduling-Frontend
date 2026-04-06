@@ -8,7 +8,14 @@ import EmployerEmployees from "./views/EmployerEmployees.vue";
 import EmployerTaskLists from "./views/EmployerTaskLists.vue";
 import EmployerSettings from "./views/EmployerSettings.vue";
 import EmployeeDashboard from "./views/EmployeeDashboard.vue";
+import EmployeeSchedule from "./views/EmployeeSchedule.vue";
+import EmployeeAvailability from "./views/EmployeeAvailability.vue";
+import EmployeeTradeboard from "./views/EmployeeTradeboard.vue";
+import EmployeeSettings from "./views/EmployeeSettings.vue";
+import EmployerCreateProfile from "./views/EmployerCreateProfile.vue";
+import EmployeeCreateProfile from "./views/EmployeeCreateProfile.vue";
 import Utils from "./config/utils.js";
+import EmployerTradeboard from "./views/EmployerTradeboard.vue";
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -24,6 +31,16 @@ const router = createRouter({
       path: "/roles",
       name: "roleSelection",
       component: RoleSelection,
+    },
+    {
+      path: "/onboarding/employer",
+      name: "employerCreateProfile",
+      component: EmployerCreateProfile,
+    },
+    {
+      path: "/onboarding/employee",
+      name: "employeeCreateProfile",
+      component: EmployeeCreateProfile,
     },
     {
       path: "/employer",
@@ -42,6 +59,11 @@ const router = createRouter({
           component: EmployerEmployees,
         },
         {
+          path: "trades",
+          name: "tradeRequestShifts",
+          component: EmployerTradeboard,
+        },
+        {
           path: "tasklists",
           name: "employerTaskLists",
           component: EmployerTaskLists,
@@ -57,6 +79,29 @@ const router = createRouter({
       path: "/employee",
       name: "employeeDashboard",
       component: EmployeeDashboard,
+      redirect: { name: "employeeSchedule" },
+      children: [
+        {
+          path: "schedule",
+          name: "employeeSchedule",
+          component: EmployeeSchedule,
+        },
+        {
+          path: "availability",
+          name: "employeeAvailability",
+          component: EmployeeAvailability,
+        },
+        {
+          path: "trades",
+          name: "employeeTradeboard",
+          component: EmployeeTradeboard,
+        },
+        {
+          path: "settings",
+          name: "employeeSettings",
+          component: EmployeeSettings,
+        },
+      ],
     },
   ],
 });

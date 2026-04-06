@@ -25,9 +25,19 @@
         <p class="muted">{{ employee.role }}</p>
         <p><v-icon size="18">mdi-email-outline</v-icon>{{ employee.email }}</p>
         <p><v-icon size="18">mdi-phone-outline</v-icon>{{ employee.phone }}</p>
-        <button class="ghost-button full" @click="openAvailability(employee)">
-          View Availability
-        </button>
+
+        <div class="card-actions">
+          <button class="ghost-button view-btn" @click="openAvailability(employee)">
+            View Availability
+          </button>
+          <button
+            class="delete-icon-btn"
+            title="Delete employee"
+            @click="deleteEmployee(employee.id)"
+          >
+            <v-icon size="20" color="red">mdi-trash-can-outline</v-icon>
+          </button>
+        </div>
       </article>
     </div>
 
@@ -77,22 +87,6 @@
           <strong>{{ day.day }}</strong>
           <span>{{ day.time }}</span>
         </article>
-
-        <h3>Time-Off Requests</h3>
-        <article class="timeoff-row">
-          <div>
-            <strong>2026-02-01</strong>
-            <p class="muted">Vacation</p>
-          </div>
-          <span class="status approved">approved</span>
-        </article>
-        <article class="timeoff-row">
-          <div>
-            <strong>2026-02-15</strong>
-            <p class="muted">Doctor appointment</p>
-          </div>
-          <span class="status pending">pending</span>
-        </article>
       </section>
     </div>
   </section>
@@ -133,6 +127,7 @@ export default {
       if (!term) {
         return this.employees;
       }
+
       return this.employees.filter(
         (employee) =>
           employee.name.toLowerCase().includes(term) ||
@@ -184,6 +179,19 @@ export default {
       })
         .then(() => {
           this.closeAddDialog();
+          this.fetchEmployees();
+        })
+        .catch((error) => {
+          console.log("error", error);
+        });
+    },
+    deleteEmployee(id) {
+      if (!id || !window.confirm("Delete this employee?")) {
+        return;
+      }
+
+      SchedulerServices.deleteEmployee(id)
+        .then(() => {
           this.fetchEmployees();
         })
         .catch((error) => {
@@ -294,11 +302,6 @@ p {
   color: #fff;
 }
 
-.full {
-  width: 100%;
-  justify-content: center;
-}
-
 .overlay {
   position: fixed;
   inset: 0;
@@ -357,8 +360,7 @@ p {
   margin-top: 14px;
 }
 
-.availability-row,
-.timeoff-row {
+.availability-row {
   border: 1px solid #dce1ec;
   border-radius: 12px;
   padding: 10px 12px;
@@ -368,21 +370,33 @@ p {
   margin-bottom: 8px;
 }
 
-.status {
-  border-radius: 999px;
-  padding: 3px 10px;
-  font-size: 13px;
-  font-weight: 700;
+.card-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+  align-items: center;
 }
 
-.status.approved {
-  background: #060828;
-  color: #fff;
+.view-btn {
+  flex-grow: 1;
+  justify-content: center;
 }
 
-.status.pending {
-  background: #eceff5;
-  color: #293850;
+.delete-icon-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #fff1f1;
+  border: 1px solid #ffcccc;
+  border-radius: 12px;
+  width: 44px;
+  height: 44px;
+  cursor: pointer;
+}
+
+.delete-icon-btn:hover {
+  background: #ffe0e0;
+  border-color: #ffb3b3;
 }
 
 @media (max-width: 980px) {

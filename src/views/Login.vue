@@ -27,7 +27,7 @@
         </v-alert>
 
         <p class="helper-text">
-          New users are created automatically the first time they log in.
+          After sign-in, you'll choose whether you're continuing as an employer or employee and complete your profile once.
         </p>
       </section>
     </div>

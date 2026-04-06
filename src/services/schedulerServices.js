@@ -4,6 +4,9 @@ export default {
   getEmployees() {
     return apiClient.get("employee");
   },
+  getEmployeeAvailabilityIndex() {
+    return apiClient.get("employee/availability-index");
+  },
   createEmployee(payload) {
     return apiClient.post("employee", payload);
   },
