@@ -1,32 +1,38 @@
 <template>
   <div class="dashboard-page">
-    <header class="header">
-      <div>
-        <h1>Employer Dashboard</h1>
-        <p>Manage your team's schedule</p>
-      </div>
-      <button class="ghost-button" @click="$router.push({ name: 'employeeDashboard' })">
-        Switch View
-      </button>
-    </header>
+    <section class="dashboard-shell">
+      <header class="header">
+        <div class="title-block">
+          <p class="eyebrow">Employer Workspace</p>
+          <h1>{{ headingTitle }}</h1>
+          <p>{{ headingSubtitle }}</p>
+        </div>
+        <button class="ghost-button" @click="$router.push({ name: 'employeeDashboard' })">
+          Switch View
+        </button>
+      </header>
 
-    <nav class="tabs">
-      <button v-for="tab in tabs" :key="tab.key" :class="['tab', { active: currentTab === tab.key }]"
-        @click="$router.push({ name: tab.routeName })">
-        <v-icon size="18">{{ tab.icon }}</v-icon>
-        {{ tab.label }}
-      </button>
-    </nav>
+      <nav class="tabs">
+        <button v-for="tab in tabs" :key="tab.key" :class="['tab', { active: currentTab === tab.key }]"
+          @click="$router.push({ name: tab.routeName })">
+          <v-icon size="18">{{ tab.icon }}</v-icon>
+          {{ tab.label }}
+        </button>
+      </nav>
+    </section>
 
     <router-view />
   </div>
 </template>
 
 <script>
+import EmployerServices from "@/services/employerServices";
+
 export default {
   name: "EmployerDashboard",
   data() {
     return {
+      employerProfile: null,
       tabs: [
         {
           key: "schedule",
@@ -62,6 +68,18 @@ export default {
     };
   },
   computed: {
+    currentUser() {
+      return this.$store.getters.getLoginUserInfo || {};
+    },
+    headingTitle() {
+      return this.employerProfile?.businessName || "Employer Workspace";
+    },
+    headingSubtitle() {
+      const niche = this.employerProfile?.niche;
+      return niche
+        ? `Manage schedules and staffing for your ${niche.toLowerCase()}.`
+        : "Manage your team's schedule";
+    },
     currentTab() {
       const map = {
         employerSchedule: "schedule",
@@ -73,9 +91,18 @@ export default {
       return map[this.$route.name] || "schedule";
     },
   },
-  created() {
+  async created() {
     if (this.$route.name === "employerDashboard") {
       this.$router.replace({ name: "employerSchedule" });
+    }
+
+    if (this.currentUser?.userId) {
+      try {
+        const { data } = await EmployerServices.getEmployerProfile(this.currentUser.userId);
+        this.employerProfile = data || null;
+      } catch (error) {
+        this.employerProfile = null;
+      }
     }
   },
 };
@@ -84,42 +111,65 @@ export default {
 <style scoped>
 .dashboard-page {
   min-height: 100vh;
-  background: #f3f5f8;
+  background:
+    radial-gradient(circle at top left, rgba(88, 126, 255, 0.12), transparent 22%),
+    linear-gradient(180deg, #f6f8fc 0%, #edf2f8 100%);
   color: #151d2d;
+  padding: 18px 28px 0;
+}
+
+.dashboard-shell {
+  max-width: 1380px;
+  margin: 0 auto 18px;
+  border: 1px solid rgba(220, 225, 236, 0.92);
+  border-radius: 28px;
+  background: rgba(255, 255, 255, 0.88);
+  box-shadow: 0 18px 40px rgba(28, 39, 64, 0.06);
+  overflow: hidden;
+  backdrop-filter: blur(8px);
 }
 
 .header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 20px;
-  background: #fff;
-  border-bottom: 1px solid #e5e8ef;
+  padding: 24px 28px 18px;
 }
 
 h1 {
   margin: 0;
-  font-size: 42px;
+  font-size: 44px;
+  line-height: 1;
 }
 
-p {
+.title-block p {
   margin: 0;
+  color: #607089;
+}
+
+.eyebrow {
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 12px;
+  font-weight: 800;
+  color: #3359c9;
 }
 
 .tabs {
-  display: inline-flex;
-  background: #e8ebf2;
-  border-radius: 14px;
-  margin: 20px;
-  gap: 2px;
-  padding: 4px;
+  display: flex;
+  gap: 6px;
+  padding: 0 22px 22px;
+  border-top: 1px solid rgba(229, 232, 239, 0.9);
+  padding-top: 14px;
+  flex-wrap: wrap;
 }
 
 .tab {
   border: none;
-  background: transparent;
-  padding: 10px 14px;
-  border-radius: 12px;
+  background: rgba(232, 235, 242, 0.75);
+  padding: 10px 15px;
+  border-radius: 14px;
   font-weight: 700;
   display: flex;
   align-items: center;
@@ -129,6 +179,8 @@ p {
 
 .tab.active {
   background: #fff;
+  box-shadow: 0 6px 18px rgba(32, 43, 71, 0.08);
+  border: 1px solid rgba(220, 225, 236, 0.95);
 }
 
 .ghost-button {
@@ -136,22 +188,33 @@ p {
   padding: 11px 16px;
   font-weight: 700;
   border: 1px solid #d7dceb;
-  background: #fff;
+  background: rgba(255, 255, 255, 0.9);
   display: inline-flex;
   align-items: center;
   gap: 8px;
+  box-shadow: 0 10px 24px rgba(23, 27, 37, 0.05);
 }
 
 @media (max-width: 980px) {
+  .dashboard-page {
+    padding: 12px 14px 0;
+  }
+
+  .header {
+    padding: 18px 16px 14px;
+    display: grid;
+    gap: 14px;
+  }
+
   h1 {
     font-size: 34px;
   }
 
   .tabs {
-    margin: 14px;
-    width: calc(100% - 28px);
+    padding: 12px 14px 14px;
     overflow-x: auto;
     display: flex;
+    flex-wrap: nowrap;
   }
 }
 </style>

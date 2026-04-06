@@ -25,4 +25,22 @@ export default {
   deleteEmployee(id) {
     return apiClient.delete(`/employee/${id}`);
   },
+
+  getEmployeeDashboard(userId) {
+    return apiClient.get(`/employee/dashboard/users/${userId}`);
+  },
+
+  updateEmployeeAvailability(userId, weeklyAvailability) {
+    return apiClient.put(`/employee/dashboard/users/${userId}/availability`, {
+      weeklyAvailability,
+    });
+  },
+
+  getEmployeeProfile(userId) {
+    return apiClient.get(`/employee/profile/users/${userId}`);
+  },
+
+  createEmployeeProfile(userId, data) {
+    return apiClient.post(`/employee/profile/users/${userId}`, data);
+  },
 };

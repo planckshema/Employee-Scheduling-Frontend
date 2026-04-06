@@ -18,28 +18,22 @@
     <div class="cards-grid">
       <article
         v-for="employee in filteredEmployees"
-        :key="employee.email"
+        :key="employee.id"
         class="card"
       >
         <h3>{{ employee.name }}</h3>
         <p class="muted">{{ employee.role }}</p>
         <p><v-icon size="18">mdi-email-outline</v-icon>{{ employee.email }}</p>
-
-        <p>
-          <v-icon size="18">mdi-phone-outline</v-icon>{{ employee.phoneNum }}
-        </p>
+        <p><v-icon size="18">mdi-phone-outline</v-icon>{{ employee.phone }}</p>
 
         <div class="card-actions">
-          <button
-            class="ghost-button view-btn"
-            @click="viewAvailability(employee)"
-          >
+          <button class="ghost-button view-btn" @click="openAvailability(employee)">
             View Availability
           </button>
-
           <button
             class="delete-icon-btn"
-            @click="deleteEmployee(employee.EmployeeID)"
+            title="Delete employee"
+            @click="deleteEmployee(employee.id)"
           >
             <v-icon size="20" color="red">mdi-trash-can-outline</v-icon>
           </button>
@@ -55,35 +49,22 @@
             <v-icon>mdi-close</v-icon>
           </button>
         </header>
-        <v-row>
-          <v-col cols="6">
-            <label>First Name</label>
-            <input v-model="newEmployee.fName" type="text" placeholder="John" />
-          </v-col>
-          <v-col cols="6">
-            <label>Last Name</label>
-            <input v-model="newEmployee.lName" type="text" placeholder="Doe" />
-          </v-col>
-        </v-row>
-
+        <label>Name</label>
+        <input v-model="newEmployee.name" type="text" placeholder="John Doe" />
         <label>Email</label>
         <input
           v-model="newEmployee.email"
           type="text"
           placeholder="john@example.com"
         />
-
         <label>Phone</label>
-        <input
-          v-model="newEmployee.phoneNum"
-          type="text"
-          placeholder="555-0101"
-        />
-
+        <input v-model="newEmployee.phone" type="text" placeholder="555-0101" />
+        <label>Position</label>
+        <input v-model="newEmployee.role" type="text" placeholder="Server" />
         <footer>
           <button class="ghost-button" @click="closeAddDialog">Cancel</button>
           <button class="primary-button" @click="saveEmployee">
-            Save Employee
+            Add Employee
           </button>
         </footer>
       </section>
@@ -92,7 +73,7 @@
     <div v-if="availabilityDialog" class="overlay">
       <section class="modal narrow">
         <header>
-          <h2>{{ selectedEmployee.firstName }}'s Availability</h2>
+          <h2>{{ selectedEmployee.name }}'s Availability</h2>
           <button class="icon-inline" @click="availabilityDialog = false">
             <v-icon>mdi-close</v-icon>
           </button>
@@ -112,7 +93,7 @@
 </template>
 
 <script>
-import EmployeeServices from "@/services/employeeServices";
+import SchedulerServices from "@/services/schedulerServices";
 
 export default {
   name: "EmployerEmployees",
@@ -121,13 +102,13 @@ export default {
       employeeSearch: "",
       addEmployeeDialog: false,
       availabilityDialog: false,
+      selectedEmployee: { name: "Employee" },
       employees: [],
-      selectedEmployee: {},
       newEmployee: {
-        fName: "",
-        lName: "",
+        name: "",
         email: "",
-        phoneNum: "",
+        phone: "",
+        role: "",
       },
       availability: [
         { day: "Monday", time: "09:00 - 17:00" },
@@ -143,55 +124,81 @@ export default {
   computed: {
     filteredEmployees() {
       const term = this.employeeSearch.toLowerCase().trim();
-      if (!term) return this.employees;
+      if (!term) {
+        return this.employees;
+      }
 
       return this.employees.filter(
         (employee) =>
-          (employee.fName && employee.fName.toLowerCase().includes(term)) ||
-          (employee.lName && employee.lName.toLowerCase().includes(term)) ||
-          (employee.email && employee.email.toLowerCase().includes(term))
+          employee.name.toLowerCase().includes(term) ||
+          employee.role.toLowerCase().includes(term) ||
+          employee.email.toLowerCase().includes(term)
       );
     },
   },
-  mounted() {
-    this.retrieveEmployees();
+  created() {
+    this.fetchEmployees();
   },
   methods: {
-    deleteEmployee(id) {
-      if (confirm("Are you sure you want to delete this employee?")) {
-        EmployeeServices.deleteEmployee(id)
-          .then(() => {
-            this.retrieveEmployees(); // Refresh the list from the DB
-          })
-          .catch((e) => {
-            console.error("Delete failed:", e);
-          });
-      }
+    mapEmployee(row) {
+      return {
+        id: row.EmployeeID,
+        name: `${row.firstName} ${row.lastName}`.trim(),
+        role: "Employee",
+        email: row.email,
+        phone: row.phoneNum,
+      };
     },
-    retrieveEmployees() {
-      EmployeeServices.getAllEmployees()
+    fetchEmployees() {
+      SchedulerServices.getEmployees()
         .then((response) => {
-          this.employees = response.data;
+          this.employees = (response.data || []).map(this.mapEmployee);
         })
-        .catch((e) => {
-          console.error("Error fetching employees:", e);
-        });
-    },
-    saveEmployee() {
-      EmployeeServices.createEmployee(this.newEmployee)
-        .then(() => {
-          this.retrieveEmployees(); // Refresh the list
-          this.closeAddDialog();
-        })
-        .catch((e) => {
-          console.error("Error saving employee:", e);
+        .catch((error) => {
+          console.log("error", error);
         });
     },
     closeAddDialog() {
       this.addEmployeeDialog = false;
-      this.newEmployee = { fName: "", lName: "", email: "", phoneNum: "" };
+      this.newEmployee = { name: "", email: "", phone: "", role: "" };
     },
-    viewAvailability(employee) {
+    saveEmployee() {
+      if (!this.newEmployee.name.trim() || !this.newEmployee.email.trim()) {
+        return;
+      }
+
+      const nameParts = this.newEmployee.name.trim().split(/\s+/);
+      const firstName = nameParts.shift() || "";
+      const lastName = nameParts.join(" ") || "Employee";
+
+      SchedulerServices.createEmployee({
+        firstName,
+        lastName,
+        email: this.newEmployee.email.trim(),
+        phoneNum: this.newEmployee.phone.trim(),
+      })
+        .then(() => {
+          this.closeAddDialog();
+          this.fetchEmployees();
+        })
+        .catch((error) => {
+          console.log("error", error);
+        });
+    },
+    deleteEmployee(id) {
+      if (!id || !window.confirm("Delete this employee?")) {
+        return;
+      }
+
+      SchedulerServices.deleteEmployee(id)
+        .then(() => {
+          this.fetchEmployees();
+        })
+        .catch((error) => {
+          console.log("error", error);
+        });
+    },
+    openAvailability(employee) {
       this.selectedEmployee = employee;
       this.availabilityDialog = true;
     },
@@ -287,18 +294,12 @@ p {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  cursor: pointer;
 }
 
 .primary-button {
   border-color: #080c28;
   background: #060828;
   color: #fff;
-}
-
-.full {
-  width: 100%;
-  justify-content: center;
 }
 
 .overlay {
@@ -314,7 +315,7 @@ p {
 
 .modal {
   width: 100%;
-  max-width: 600px;
+  max-width: 900px;
   background: #fff;
   border-radius: 18px;
   padding: 22px;
@@ -334,7 +335,7 @@ p {
 }
 
 .modal label {
-  font-size: 16px;
+  font-size: 20px;
   font-weight: 700;
   margin-top: 10px;
   margin-bottom: 6px;
@@ -391,7 +392,6 @@ p {
   width: 44px;
   height: 44px;
   cursor: pointer;
-  transition: all 0.2s;
 }
 
 .delete-icon-btn:hover {
@@ -400,6 +400,10 @@ p {
 }
 
 @media (max-width: 980px) {
+  .tab-content {
+    padding: 0 14px 16px;
+  }
+
   .toolbar-row {
     flex-direction: column;
     align-items: flex-start;
