@@ -3,12 +3,33 @@ import Utils from "@/config/utils.js";
 import AuthServices from "./authServices.js";
 import Router from "../router.js";
 
-var baseurl = "";
-if (process.env.NODE_ENV === "development") {
-  baseurl = "http://localhost/tutorial/";
-} else {
-  baseurl = "/tutorial/";
-}
+const configuredBaseUrl = (
+  import.meta.env.VITE_API_URL ||
+  import.meta.env.VUE_APP_API_URL ||
+  ""
+).trim();
+const defaultDevBaseUrl = "http://localhost:3100/tutorial";
+const defaultProdBaseUrl = "/tutorial";
+
+const normalizeBaseUrl = (url) => {
+  if (!url) {
+    return url;
+  }
+
+  const trimmedUrl = url.replace(/\/+$/, "");
+  return trimmedUrl.endsWith("/tutorial")
+    ? trimmedUrl
+    : `${trimmedUrl}/tutorial`;
+};
+
+const rawBaseUrl = configuredBaseUrl
+  ? normalizeBaseUrl(configuredBaseUrl)
+  : (import.meta.env.DEV
+      ? defaultDevBaseUrl
+      : defaultProdBaseUrl);
+
+const baseurl =
+  rawBaseUrl === "/" ? rawBaseUrl : rawBaseUrl.replace(/\/+$/, "");
 
 const apiClient = axios.create({
   baseURL: baseurl,
@@ -16,39 +37,47 @@ const apiClient = axios.create({
     Accept: "application/json",
     "Content-Type": "application/json",
     "X-Requested-With": "XMLHttpRequest",
-    "Access-Control-Allow-Origin": "*",
-    crossDomain: true,
   },
-  transformRequest: (data, headers) => {
-    let user = Utils.getStore("user");
-    if (user != null) {
-      let token = user.token;
-      let authHeader = "";
-      if (token != null && token != "") authHeader = "Bearer " + token;
-      headers.common["Authorization"] = authHeader;
+  transformResponse: (data) => {
+    if (!data) {
+      return data;
     }
-    return JSON.stringify(data);
-  },
-  transformResponse: function (data) {
-    data = JSON.parse(data);
-    // if (!data.success && data.code == "expired-session") {
-    //   localStorage.deleteItem("user");
-    // }
-    if (data.message !== undefined && data.message.includes("Unauthorized")) {
+
+    let parsed = data;
+    try {
+      parsed = JSON.parse(data);
+    } catch (err) {
+      return data;
+    }
+
+    if (
+      parsed.message !== undefined &&
+      parsed.message.includes("Unauthorized")
+    ) {
       AuthServices.logoutUser(Utils.getStore("user"))
-        .then((response) => {
-          console.log(response);
+        .then(() => {
           Utils.removeItem("user");
           Router.push({ name: "login" });
         })
         .catch((error) => {
           console.log("error", error);
         });
-      // Utils.removeItem("user")
     }
-    // console.log(Utils.getStore("user"))
-    return data;
+
+    return parsed;
   },
+});
+
+apiClient.interceptors.request.use((config) => {
+  const user = Utils.getStore("user");
+  const token = user?.token;
+
+  if (token) {
+    config.headers = config.headers || {};
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+
+  return config;
 });
 
 export default apiClient;
