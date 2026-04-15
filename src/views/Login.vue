@@ -29,6 +29,10 @@
         <p class="helper-text">
           After sign-in, you'll choose whether you're continuing as an employer or employee and complete your profile once.
         </p>
+
+        <button class="admin-btn" @click="$router.push({ name: 'adminLogin' })">
+          Go to Admin Login
+        </button>
       </section>
     </div>
   </div>
@@ -246,5 +250,24 @@ export default {
   .hero-copy {
     font-size: 17px;
   }
+}
+
+.admin-btn {
+  margin-top: 16px;
+  width: 100%;
+  padding: 8px;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: #6a768d;
+  font-size: 13px;
+  font-weight: 400;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.admin-btn:hover {
+  color: #3359c9;
+  background: transparent;
 }
 </style>

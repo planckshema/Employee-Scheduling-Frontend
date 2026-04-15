@@ -8,18 +8,21 @@ const configuredBaseUrl = (
   import.meta.env.VUE_APP_API_URL ||
   ""
 ).trim();
-const defaultDevBaseUrl = "http://localhost:3100/tutorial";
-const defaultProdBaseUrl = "/tutorial";
 
+// 1. Set the base to the actual backend port
+const defaultDevBaseUrl = "http://localhost:3100/workerscheduling-t8";
+const defaultProdBaseUrl = "/workerscheduling-t8";
+
+// 2. Fix the "Helper" function to look for the right name
 const normalizeBaseUrl = (url) => {
-  if (!url) {
-    return url;
-  }
+  if (!url) return url;
 
   const trimmedUrl = url.replace(/\/+$/, "");
-  return trimmedUrl.endsWith("/tutorial")
+  
+  // Check for 'workerscheduling-t8' instead of 'tutorial'
+  return trimmedUrl.endsWith("/workerscheduling-t8")
     ? trimmedUrl
-    : `${trimmedUrl}/tutorial`;
+    : `${trimmedUrl}/workerscheduling-t8`;
 };
 
 const rawBaseUrl = configuredBaseUrl
