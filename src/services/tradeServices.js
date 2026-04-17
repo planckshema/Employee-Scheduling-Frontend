@@ -11,6 +11,9 @@ export default {
     getAvailableShifts() {
         return apiClient.get("/tradeRequestShifts/available");
     },
+    getPendingCount() {
+        return apiClient.get("/tradeRequestShifts/pending-count");
+    },
     claimTrade(id, data) {
         return apiClient.put(`/tradeRequestShifts/${id}/claim`, data);
     },

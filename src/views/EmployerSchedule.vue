@@ -46,6 +46,11 @@
         <span>Availability Flags</span>
         <strong>{{ availabilityConflictCount }}</strong>
       </article>
+      <article class="summary-card" :class="{ 'pending-card': pendingTrades > 0 }"
+        @click="$router.push('/employer/trades')" style="cursor: pointer;">
+        <span>Pending Trades</span>
+        <strong>{{ pendingTrades }}</strong>
+      </article>
       <article class="summary-card">
         <span>Business Type</span>
         <strong>{{ businessLabel }}</strong>
@@ -80,20 +85,11 @@
               </div>
 
               <div v-if="getShiftsForSlot(day.isoDate, slot).length" class="shift-stack">
-                <article
-                  v-for="shift in getShiftsForSlot(day.isoDate, slot)"
-                  :key="shift.shiftId"
-                  :class="[
-                    'shift-card',
-                    { unassigned: !shift.employeeName, flagged: hasAvailabilityConflict(shift) },
-                  ]"
-                  @click="openEditShiftDialog(shift)"
-                >
-                  <button
-                    class="shift-delete"
-                    title="Delete shift"
-                    @click.stop="deleteShift(shift.shiftId)"
-                  >
+                <article v-for="shift in getShiftsForSlot(day.isoDate, slot)" :key="shift.shiftId" :class="[
+                  'shift-card',
+                  { unassigned: !shift.employeeName, flagged: hasAvailabilityConflict(shift) },
+                ]" @click="openEditShiftDialog(shift)">
+                  <button class="shift-delete" title="Delete shift" @click.stop="deleteShift(shift.shiftId)">
                     <v-icon size="14">mdi-close</v-icon>
                   </button>
 
@@ -173,11 +169,7 @@
         </select>
 
         <footer>
-          <button
-            v-if="editingShiftId"
-            class="ghost-button danger-button footer-left"
-            @click="deleteEditingShift"
-          >
+          <button v-if="editingShiftId" class="ghost-button danger-button footer-left" @click="deleteEditingShift">
             Delete Shift
           </button>
           <button class="ghost-button" @click="closeShiftDialog">Cancel</button>
@@ -209,7 +201,8 @@
         </div>
 
         <p class="muted modal-copy">
-          Generated suggestions use employee availability, your business hours, and your business type to prefill a workable draft.
+          Generated suggestions use employee availability, your business hours, and your business type to prefill a
+          workable draft.
         </p>
 
         <div v-if="templates.length" class="template-list">
@@ -243,6 +236,7 @@
 import EmployerServices from "@/services/employerServices";
 import SchedulerServices from "@/services/schedulerServices";
 import TemplateServices from "@/services/templateServices";
+import TradeService from "../services/tradeServices.js"
 
 const dayKeys = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
 const POSITION_LIBRARY = [
@@ -331,11 +325,11 @@ const buildDefaultSlots = () => {
 const normalizeAvailability = (availability) =>
   Array.isArray(availability)
     ? availability.map((row) => ({
-        dayKey: row.dayKey,
-        available: Boolean(row.available),
-        startTime: row.startTime || "",
-        endTime: row.endTime || "",
-      }))
+      dayKey: row.dayKey,
+      available: Boolean(row.available),
+      startTime: row.startTime || "",
+      endTime: row.endTime || "",
+    }))
     : [];
 
 const extractPositionOptions = (niche) => {
@@ -383,6 +377,7 @@ export default {
   data() {
     const monday = startOfWeekMonday(new Date());
     return {
+      pendingTrades: 0,
       newShiftDialog: false,
       templateDialog: false,
       currentWeekStart: monday,
@@ -484,6 +479,7 @@ export default {
         this.fetchEmployerProfile(),
         this.fetchTaskLists(),
         this.fetchShifts(),
+        this.getDashboardFlags(),
       ]);
     },
     mapEmployee(row) {
@@ -883,7 +879,17 @@ export default {
         console.log("error", error);
       }
     },
+    async getDashboardFlags() {
+      try {
+        const response = await TradeService.getPendingCount();
+        // Ensure "TradeService" is imported at the top of your <script>
+        this.pendingTrades = response.data.pendingCount;
+      } catch (error) {
+        console.error("Could not fetch trade flags:", error);
+      }
+    },
   },
+
 };
 </script>
 
@@ -951,6 +957,13 @@ p {
   display: grid;
   gap: 6px;
   box-shadow: 0 12px 28px rgba(30, 41, 65, 0.05);
+  transition: transform 0.2s;
+}
+
+/* Hover effect since it's now a link */
+.summary-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
 .summary-card span {
@@ -962,6 +975,18 @@ p {
 
 .summary-card strong {
   font-size: 24px;
+}
+
+/* The "Flag" state when trades > 0 */
+.pending-card {
+  border-left: 5px solid #fb8c00;
+  /* Orange flag */
+  background-color: #fff3e0;
+  /* Light orange tint */
+}
+
+.pending-card strong {
+  color: #ef6c00;
 }
 
 .warning-card {
