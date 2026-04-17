@@ -20,6 +20,9 @@ export default {
     approveTrade(id) {
         return apiClient.post(`/tradeRequestShifts/${id}/approve`);
     },
+    declineTrade(id) {
+        return apiClient.put(`/tradeRequestShifts/${id}/decline`);
+    },
     deleteTrade(id) {
         return apiClient.delete(`/tradeRequestShifts/${id}`);
     },
