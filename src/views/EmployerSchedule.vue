@@ -33,6 +33,13 @@
       </div>
     </div>
 
+    <div class="position-legend">
+      <span v-for="item in positionLegendItems" :key="item.name" class="legend-item">
+        <span class="legend-color" :style="{ backgroundColor: item.color }"></span>
+        {{ item.name }}
+      </span>
+    </div>
+
     <section class="schedule-summary">
       <article class="summary-card">
         <span>Shifts This Week</span>
@@ -52,73 +59,11 @@
       </article>
     </section>
 
-    <div class="schedule-table-wrap">
-      <table class="schedule-table">
-        <thead>
-          <tr>
-            <th class="time-header">Time</th>
-            <th v-for="day in weekDays" :key="day.isoDate">
-              {{ day.label }}<br />{{ day.shortDate }}
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="slot in timeSlots" :key="slot.key">
-            <td class="time-cell">
-              <strong>{{ slot.label }}</strong>
-              <button class="mini-add-button" @click="openNewShiftDialog(null, slot)">
-                <v-icon size="16">mdi-plus</v-icon>
-              </button>
-            </td>
-
-            <td v-for="day in weekDays" :key="`${slot.key}-${day.isoDate}`" class="slot-cell">
-              <div class="cell-actions">
-                <button class="cell-add-button" @click="openNewShiftDialog(day.isoDate, slot)">
-                  <v-icon size="14">mdi-plus</v-icon>
-                  Add
-                </button>
-              </div>
-
-              <div v-if="getShiftsForSlot(day.isoDate, slot).length" class="shift-stack">
-                <article
-                  v-for="shift in getShiftsForSlot(day.isoDate, slot)"
-                  :key="shift.shiftId"
-                  :class="[
-                    'shift-card',
-                    { unassigned: !shift.employeeName, flagged: hasAvailabilityConflict(shift) },
-                  ]"
-                  @click="openEditShiftDialog(shift)"
-                >
-                  <button
-                    class="shift-delete"
-                    title="Delete shift"
-                    @click.stop="deleteShift(shift.shiftId)"
-                  >
-                    <v-icon size="14">mdi-close</v-icon>
-                  </button>
-
-                  <div class="shift-header">
-                    <strong>{{ shift.position || "Shift" }}</strong>
-                    <span>{{ shift.startTime }} - {{ shift.endTime }}</span>
-                  </div>
-
-                  <p :class="['shift-assignee', { missing: !shift.employeeName }]">
-                    {{ shift.employeeName || "Unassigned employee" }}
-                  </p>
-
-                  <p v-if="hasAvailabilityConflict(shift)" class="shift-flag">
-                    Outside employee availability
-                  </p>
-                </article>
-              </div>
-
-              <div v-else class="empty-slot">
-                <span>No shift planned</span>
-              </div>
-            </td>
-          </tr>
-        </tbody>
-      </table>
+    <div class="calendar-container">
+      <FullCalendar
+        ref="calendarRef"
+        :options="calendarOptions"
+      />
     </div>
 
     <div v-if="newShiftDialog" class="overlay">
@@ -240,6 +185,11 @@
 </template>
 
 <script>
+import { defineComponent } from 'vue'
+import FullCalendar from '@fullcalendar/vue3'
+import dayGridPlugin from '@fullcalendar/daygrid'
+import timeGridPlugin from '@fullcalendar/timegrid'
+import interactionPlugin from '@fullcalendar/interaction'
 import EmployerServices from "@/services/employerServices";
 import SchedulerServices from "@/services/schedulerServices";
 import TemplateServices from "@/services/templateServices";
@@ -267,6 +217,26 @@ const POSITION_LIBRARY = [
     positions: ["Lab Assistant", "IT Support", "Tech Monitor", "Equipment Checkout", "Help Desk"],
   },
 ];
+
+const POSITION_COLOR_PALETTE = [
+  "#1E88E5",
+  "#D81B60",
+  "#FB8C00",
+  "#43A047",
+  "#8E24AA",
+  "#00ACC1",
+  "#F4511E",
+  "#6D4C41",
+  "#5E35B1",
+  "#3949AB",
+];
+
+const getPositionColor = (position) => {
+  if (!position) return "#9E9E9E";
+  const normalized = String(position).trim().toLowerCase();
+  const hash = Array.from(normalized).reduce((sum, char) => sum + char.charCodeAt(0), 0);
+  return POSITION_COLOR_PALETTE[hash % POSITION_COLOR_PALETTE.length];
+};
 
 const toIsoDate = (date) => {
   const year = date.getFullYear();
@@ -378,8 +348,11 @@ const parseOperatingHours = (value) => {
   };
 };
 
-export default {
+export default defineComponent({
   name: "EmployerSchedule",
+  components: {
+    FullCalendar
+  },
   data() {
     const monday = startOfWeekMonday(new Date());
     return {
@@ -459,6 +432,31 @@ export default {
     positionOptions() {
       return extractPositionOptions(this.employerProfile?.niche);
     },
+    positionLegendItems() {
+      const positions = new Map();
+      this.shiftsForCurrentWeek.forEach((shift) => {
+        const name = shift.position || "Unassigned";
+        if (!positions.has(name)) {
+          positions.set(name, {
+            name,
+            color: getPositionColor(shift.position),
+          });
+        }
+      });
+
+      if (!positions.size) {
+        this.positionOptions.forEach((name) => {
+          if (!positions.has(name)) {
+            positions.set(name, {
+              name,
+              color: getPositionColor(name),
+            });
+          }
+        });
+      }
+
+      return Array.from(positions.values()).slice(0, 8);
+    },
     draftAvailabilityWarning() {
       const employeeId = this.parseSelectedEmployeeId(this.newShift.employeeId);
       if (!employeeId || !this.newShift.date || !this.newShift.startTime || !this.newShift.endTime) {
@@ -472,9 +470,64 @@ export default {
         endTime: this.newShift.endTime,
       });
     },
+    calendarEvents() {
+      return this.shiftsForCurrentWeek.map(shift => {
+        const status = this.getShiftStatus(shift);
+        const baseColor = getPositionColor(shift.position);
+        const eventTitle = status === "conflict"
+          ? `⚠️ ${shift.position || 'Shift'} - ${shift.employeeName || 'Unassigned'}`
+          : `${shift.position || 'Shift'} - ${shift.employeeName || 'Unassigned'}`;
+
+        return {
+          id: shift.shiftId,
+          title: eventTitle,
+          start: `${shift.date}T${shift.startTime}`,
+          end: `${shift.date}T${shift.endTime}`,
+          extendedProps: {
+            shift: shift
+          },
+          color: status === "unassigned" ? '#FFC107' : status === "conflict" ? '#D32F2F' : baseColor,
+          borderColor: status === "conflict" ? '#B71C1C' : '#223047',
+          textColor: '#fff',
+        };
+      });
+    },
+    calendarOptions() {
+      return {
+        plugins: [dayGridPlugin, timeGridPlugin, interactionPlugin],
+        headerToolbar: false, // We have our own toolbar
+        initialView: 'timeGridWeek',
+        initialDate: this.currentWeekStart,
+        height: 'auto',
+        slotMinTime: '07:00:00',
+        slotMaxTime: '22:00:00',
+        allDaySlot: false,
+        editable: true,
+        selectable: true,
+        selectMirror: true,
+        dayMaxEvents: true,
+        weekends: true,
+        events: this.calendarEvents,
+        select: this.handleDateSelect,
+        eventClick: this.handleEventClick,
+        eventDrop: this.handleEventDrop,
+        eventResize: this.handleEventResize,
+        eventMouseEnter: this.handleEventMouseEnter,
+        eventMouseLeave: this.handleEventMouseLeave
+      };
+    },
   },
   created() {
     this.bootstrapPage();
+  },
+  watch: {
+    currentWeekStart() {
+      this.$nextTick(() => {
+        if (this.$refs.calendarRef) {
+          this.$refs.calendarRef.getApi().gotoDate(this.currentWeekStart);
+        }
+      });
+    }
   },
   methods: {
     async bootstrapPage() {
@@ -654,6 +707,15 @@ export default {
     },
     hasAvailabilityConflict(shift) {
       return Boolean(this.getAvailabilityConflictText(shift));
+    },
+    getShiftStatus(shift) {
+      if (!shift.EmployeeID) {
+        return "unassigned";
+      }
+      if (this.hasAvailabilityConflict(shift)) {
+        return "conflict";
+      }
+      return null;
     },
     async deleteShift(shiftId) {
       if (!shiftId || !window.confirm("Delete this shift?")) {
@@ -883,8 +945,80 @@ export default {
         console.log("error", error);
       }
     },
+    handleDateSelect(selectInfo) {
+      // Create new shift from selected time slot
+      const start = new Date(selectInfo.start);
+      const end = new Date(selectInfo.end);
+      this.newShift = {
+        employeeId: "",
+        position: this.positionOptions[0] || "",
+        date: toIsoDate(start),
+        startTime: start.toTimeString().slice(0, 5),
+        endTime: end.toTimeString().slice(0, 5),
+        taskListId: null,
+      };
+      this.newShiftDialog = true;
+      selectInfo.view.calendar.unselect();
+    },
+    handleEventClick(clickInfo) {
+      const shift = clickInfo.event.extendedProps.shift;
+      this.openEditShiftDialog(shift);
+    },
+    async handleEventDrop(dropInfo) {
+      const shift = dropInfo.event.extendedProps.shift;
+      const newStart = new Date(dropInfo.event.start);
+      const newEnd = new Date(dropInfo.event.end);
+      
+      const payload = {
+        date: toIsoDate(newStart),
+        startTime: newStart.toTimeString().slice(0, 5),
+        endTime: newEnd.toTimeString().slice(0, 5),
+        position: shift.position,
+        taskListId: shift.taskListId,
+        EmployeeID: shift.EmployeeID,
+        employeeName: shift.employeeName,
+      };
+
+      try {
+        await SchedulerServices.updateShift(shift.shiftId, payload);
+        await this.fetchShifts();
+        this.successMessage = "Shift updated successfully.";
+      } catch (error) {
+        console.log("error", error);
+        dropInfo.revert();
+      }
+    },
+    async handleEventResize(resizeInfo) {
+      const shift = resizeInfo.event.extendedProps.shift;
+      const newEnd = new Date(resizeInfo.event.end);
+      
+      const payload = {
+        date: shift.date,
+        startTime: shift.startTime,
+        endTime: newEnd.toTimeString().slice(0, 5),
+        position: shift.position,
+        taskListId: shift.taskListId,
+        EmployeeID: shift.EmployeeID,
+        employeeName: shift.employeeName,
+      };
+
+      try {
+        await SchedulerServices.updateShift(shift.shiftId, payload);
+        await this.fetchShifts();
+        this.successMessage = "Shift duration updated successfully.";
+      } catch (error) {
+        console.log("error", error);
+        resizeInfo.revert();
+      }
+    },
+    handleEventMouseEnter(mouseEnterInfo) {
+      // Optional: Add hover effects
+    },
+    handleEventMouseLeave(mouseLeaveInfo) {
+      // Optional: Remove hover effects
+    },
   },
-};
+})
 </script>
 
 <style scoped>
@@ -937,6 +1071,31 @@ p {
   margin-bottom: 18px;
 }
 
+.position-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: #f5f7fb;
+  color: #1f2937;
+  font-size: 13px;
+}
+
+.legend-color {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+}
+
 .schedule-summary {
   margin-bottom: 18px;
   flex-wrap: wrap;
@@ -965,13 +1124,15 @@ p {
 }
 
 .warning-card {
-  background: #fff9ef;
-  border-color: #f4ddb2;
+  background: #fff3e0;
+  border-color: #ffb74d;
+  color: #8a4f00;
 }
 
 .conflict-card {
-  background: #fff4f5;
-  border-color: #f1c8cf;
+  background: #ffebee;
+  border-color: #f44336;
+  color: #b71c1c;
 }
 
 .icon-button,
@@ -1016,6 +1177,60 @@ p {
 .small-button {
   padding: 8px 12px;
   font-size: 13px;
+}
+
+.calendar-container {
+  border: 1px solid rgba(220, 225, 236, 0.95);
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.93);
+  box-shadow: 0 22px 48px rgba(30, 41, 65, 0.06);
+  padding: 12px;
+  overflow: hidden;
+}
+
+.calendar-container :deep(.fc) {
+  font-family: inherit;
+}
+
+.calendar-container :deep(.fc-header-toolbar) {
+  display: none;
+}
+
+.calendar-container :deep(.fc-view-harness) {
+  background: #fff;
+}
+
+.calendar-container :deep(.fc-col-header) {
+  background: #f5f7fb;
+}
+
+.calendar-container :deep(.fc-col-header-cell) {
+  border: 1px solid #e7ebf3;
+  padding: 16px 14px;
+  font-size: 14px;
+  color: #223047;
+  font-weight: 600;
+}
+
+.calendar-container :deep(.fc-timegrid-slot) {
+  border: 1px solid #e7ebf3;
+}
+
+.calendar-container :deep(.fc-timegrid-axis) {
+  border: 1px solid #e7ebf3;
+}
+
+.calendar-container :deep(.fc-event) {
+  border-radius: 8px;
+  border: none;
+  padding: 4px 8px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.calendar-container :deep(.fc-event:hover) {
+  opacity: 0.8;
 }
 
 .schedule-table-wrap {

@@ -60,7 +60,13 @@
         <label>Phone</label>
         <input v-model="newEmployee.phone" type="text" placeholder="555-0101" />
         <label>Position</label>
-        <input v-model="newEmployee.role" type="text" placeholder="Server" />
+        <select v-model="newEmployee.role">
+          <option disabled value="">Select a position</option>
+          <option v-for="pos in positionOptions" :key="pos" :value="pos">
+            {{ pos }}
+          </option>
+        </select>
+        <p class="helper">Positions are based on your business type.</p>
         <footer>
           <button class="ghost-button" @click="closeAddDialog">Cancel</button>
           <button class="primary-button" @click="saveEmployee">
@@ -93,7 +99,9 @@
 </template>
 
 <script>
+import { extractPositionOptions } from "@/utils/positions";
 import SchedulerServices from "@/services/schedulerServices";
+import EmployerServices from "@/services/employerServices";
 
 export default {
   name: "EmployerEmployees",
@@ -104,6 +112,8 @@ export default {
       availabilityDialog: false,
       selectedEmployee: { name: "Employee" },
       employees: [],
+      employerNiche: "",
+      positionOptions: [],
       newEmployee: {
         name: "",
         email: "",
@@ -122,6 +132,9 @@ export default {
     };
   },
   computed: {
+    currentUser() {
+      return this.$store.getters.getLoginUserInfo || {};
+    },
     filteredEmployees() {
       const term = this.employeeSearch.toLowerCase().trim();
       if (!term) {
@@ -138,6 +151,7 @@ export default {
   },
   created() {
     this.fetchEmployees();
+    this.fetchEmployerProfile();
   },
   methods: {
     mapEmployee(row) {
@@ -156,6 +170,21 @@ export default {
         })
         .catch((error) => {
           console.log("error", error);
+        });
+    },
+    fetchEmployerProfile() {
+      if (!this.currentUser?.userId) {
+        return;
+      }
+
+      EmployerServices.getEmployerProfile(this.currentUser.userId)
+        .then((response) => {
+          this.employerNiche = response.data?.niche || "";
+          this.positionOptions = extractPositionOptions(this.employerNiche);
+        })
+        .catch((error) => {
+          console.log("error", error);
+          this.positionOptions = ["General Staff", "Front Desk", "Support Staff", "Shift Lead"];
         });
     },
     closeAddDialog() {
