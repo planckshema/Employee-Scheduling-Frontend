@@ -33,7 +33,7 @@ const rawBaseUrl = configuredBaseUrl
       : defaultProdBaseUrl);
 
 const baseurl =
-  rawBaseUrl === "/" ? rawBaseUrl : rawBaseUrl.replace(/\/+$/, "");
+  rawBaseUrl.endsWith("/") ? rawBaseUrl : `${rawBaseUrl}/`;
 
 const apiClient = axios.create({
   baseURL: baseurl,
@@ -77,11 +77,13 @@ apiClient.interceptors.request.use((config) => {
   const token = user?.token;
 
   if (token) {
+    // Force the header to exist and attach the Bearer token
     config.headers = config.headers || {};
-    config.headers.Authorization = `Bearer ${token}`;
+    config.headers["Authorization"] = `Bearer ${token}`;
   }
-
   return config;
+}, (error) => {
+  return Promise.reject(error);
 });
 
 export default apiClient;
