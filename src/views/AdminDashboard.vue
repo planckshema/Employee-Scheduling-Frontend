@@ -5,6 +5,7 @@
         <span class="logo-mark">⬡</span>
         <span class="logo-text">Admin</span>
       </div>
+      
       <div class="sidebar-footer">
         <div class="admin-badge">
           <span class="admin-dot"></span>
@@ -15,102 +16,132 @@
     </aside>
 
     <main class="main">
-      <div class="page-header">
-        <h1>Dashboard</h1>
-        <p class="page-sub">Business Areas & Organizational Hierarchy</p>
-      </div>
+      <header class="page-header">
+        <div>
+          <h1>System Overview</h1>
+          <p class="page-sub">Management of all businesses and personnel</p>
+        </div>
+        <div class="header-actions">
+          <button class="btn-primary" @click="openModal('add')">+ Add Employer</button>
+        </div>
+      </header>
 
-      <div v-if="statsError" class="inline-error">{{ statsError }}</div>
-      <div class="stats-grid">
+      <section class="stats-grid">
         <div class="stat-card" v-for="s in statCards" :key="s.label">
           <p class="stat-label">{{ s.label }}</p>
-          <p class="stat-value" :style="s.color ? { color: s.color } : {}">
-            {{ statsLoading ? "—" : s.value }}
-          </p>
-        </div>
-      </div>
-
-      <div class="section-header">
-        <div>
-          <h2>Managed Areas</h2>
-          <p class="page-sub">{{ filteredHierarchy.length }} Business Area(s) identified</p>
-        </div>
-        <button class="btn-primary" @click="openAdd">+ Add Employer</button>
-      </div>
-
-      <div class="filters">
-        <input v-model="search" class="filter-input" type="text" placeholder="Search areas or business names…" />
-      </div>
-
-      <div v-if="usersError" class="inline-error">{{ usersError }}</div>
-
-      <div v-if="usersLoading" class="table-empty">Loading organization data…</div>
-      
-      <div v-else-if="filteredHierarchy.length === 0" class="table-empty">
-        No matching data found.
-      </div>
-
-      <div v-else v-for="area in filteredHierarchy" :key="area.AreaId" class="area-group">
-        <div class="area-header">
-          <div class="area-title">
-            <span class="area-icon">📍</span>
-            <h3>{{ area.Name }}</h3>
-            <span class="badge">Area ID: {{ area.AreaId }}</span>
+          <div class="stat-flex">
+            <p class="stat-value">{{ statsLoading ? "—" : s.value }}</p>
+            <span class="stat-icon">{{ s.icon }}</span>
           </div>
         </div>
+      </section>
 
-        <div v-if="area.employer" class="employer-section">
-          <div class="employer-info">
-            <div>
-              <p class="biz-name">{{ area.employer.businessName }}</p>
-              <p class="biz-owner">Owner: {{ area.employer.firstName }} {{ area.employer.lastName }}</p>
+      <div class="search-bar">
+        <span class="search-icon">🔍</span>
+        <input v-model="searchQuery" type="text" placeholder="Filter by business name, owner, or staff email..." />
+      </div>
+
+      <div v-if="usersLoading" class="loading-state">
+        <div class="spinner"></div>
+      </div>
+
+      <div v-else class="organization-list">
+        <div v-for="employer in filteredData" :key="employer.employerid" class="employer-block">
+          <div class="employer-info-bar">
+            <div class="biz-meta">
+              <span class="biz-initials">{{ (employer.businessName || 'B')[0] }}</span>
+              <div>
+                <h2 class="biz-name">{{ employer.businessName }}</h2>
+                <p class="biz-owner">Owned by {{ employer.firstName }} {{ employer.lastName }}</p>
+                <small style="color: #64748b;">📍 {{ employer.location }}</small>
+              </div>
             </div>
             <div class="biz-contact">
-              <p class="td-muted">{{ area.employer.email }}</p>
-              <span class="pill pill-employer">Primary Employer</span>
+              <span class="contact-pill">{{ employer.email }}</span>
+              <button class="edit-icon-btn" @click="openModal('edit', employer)">⚙️</button>
+              <button class="btn-text-del" style="margin-left: 10px;" @click="confirmDelete('employer', employer)">Delete</button>
             </div>
           </div>
 
-          <div class="table-card mt-4">
-            <table class="user-table">
+          <div class="staff-container">
+            <div class="staff-header">
+              <h3>Staff</h3>
+              <span class="staff-count">{{ employer.staff?.length || 0 }} Employees</span>
+            </div>
+            <table class="staff-table">
               <thead>
                 <tr>
-                  <th>Staff Member</th>
-                  <th>Email</th>
+                  <th>Employee Name</th>
+                  <th>Contact</th>
                   <th>ID</th>
-                  <th>Actions</th>
+                  <th class="text-right">Actions</th>
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="staff in area.employer.staff" :key="staff.EmployeeID">
-                  <td>
-                    <div class="user-cell">
-                      <div class="avatar">{{ initials(staff.firstName + ' ' + staff.lastName) }}</div>
-                      <span class="user-name">{{ staff.firstName }} {{ staff.lastName }}</span>
-                    </div>
-                  </td>
-                  <td class="td-muted">{{ staff.email }}</td>
-                  <td class="td-muted font-mono">#{{ staff.EmployeeID }}</td>
-                  <td>
-                    <div class="row-actions">
-                      <button class="act-edit" @click="openEdit(staff)">Edit</button>
-                      <button class="act-del" @click="askDelete(staff)">Delete</button>
-                    </div>
+                <tr v-for="staff in employer.staff" :key="staff.EmployeeID">
+                  <td>{{ staff.firstName }} {{ staff.lastName }}</td>
+                  <td class="email-cell">{{ staff.email }}</td>
+                  <td class="id-cell">#{{ staff.EmployeeID }}</td>
+                  <td class="text-right">
+                    <button class="btn-text-del" @click="confirmDelete('staff', staff)">Remove</button>
                   </td>
                 </tr>
-                <tr v-if="!area.employer.staff?.length">
-                  <td colspan="4" class="table-empty">No staff members currently assigned.</td>
+                <tr v-if="!employer.staff?.length">
+                  <td colspan="4" class="empty-msg">No employees assigned to this employer.</td>
                 </tr>
               </tbody>
             </table>
           </div>
         </div>
-        
-        <div v-else class="table-empty p-4">No employer assigned to this business area.</div>
       </div>
     </main>
 
+    <div v-if="showModal" class="modal-overlay" @click.self="closeModal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>{{ modalTitle }}</h2>
+          <button class="close-x" @click="closeModal">&times;</button>
+        </div>
+        
+        <div v-if="modalMode !== 'delete'" class="modal-body">
+          <div class="input-group">
+            <label>Business Name</label>
+            <input v-model="form.businessName" type="text" placeholder="e.g. Campus Coffee Beans" />
+          </div>
+          <div class="input-row">
+            <div class="input-group">
+              <label>Owner First Name</label>
+              <input v-model="form.firstName" type="text" placeholder="First Name" />
+            </div>
+            <div class="input-group">
+              <label>Owner Last Name</label>
+              <input v-model="form.lastName" type="text" placeholder="Last Name" />
+            </div>
+          </div>
+          <div class="input-group">
+            <label>Business Email</label>
+            <input v-model="form.email" type="email" placeholder="email@example.com" />
+          </div>
+          <div class="input-group">
+            <label>Location</label>
+            <input v-model="form.location" type="text" placeholder="e.g. Downtown, Main St." />
+          </div>
+        </div>
+
+        <div v-else class="modal-body delete-confirm-text">
+          <p>Are you sure you want to remove <strong>{{ deleteTargetName }}</strong>?</p>
+          <p class="warning-text">This action cannot be undone.</p>
+        </div>
+
+        <div class="modal-footer">
+          <button class="btn-cancel" @click="closeModal">Cancel</button>
+          <button :class="modalMode === 'delete' ? 'btn-del-confirm' : 'btn-save'" @click="handleSubmit">
+            {{ submitButtonText }}
+          </button>
+        </div>
+      </div>
     </div>
+  </div>
 </template>
 
 <script>
@@ -121,119 +152,189 @@ export default {
   data() {
     return {
       stats: {},
+      users: [],
+      searchQuery: "",
       statsLoading: true,
-      statsError: null,
-      users: [], // This will now hold the nested BusinessArea data
       usersLoading: true,
-      usersError: null,
-      search: "",
+      showModal: false,
+      modalMode: 'add', 
+      deleteType: '', 
+      currentId: null,
+      deleteTargetName: '',
+      form: { 
+        businessName: "", 
+        firstName: "", 
+        lastName: "", 
+        email: "",
+        location: "" 
+      }
     };
   },
   computed: {
-    currentUser() {
-      return this.$store.state.loginUser;
-    },
+    currentUser() { return this.$store.state.loginUser; },
     statCards() {
       return [
-        { label: "Total Users",   value: this.stats.totalUsers ?? 0 },
-        { label: "Employers",     value: this.stats.totalEmployers ?? 0 },
-        { label: "Employees",     value: this.stats.totalEmployees ?? 0 },
-        { label: "Business Areas",value: this.stats.totalAreas ?? 0 },
-        { label: "System Status", value: "Online", color: "#22c55e" },
+        { label: "Active Employers", value: this.stats.totalEmployers || 0, icon: "🏢" },
+        { label: "Total Employees", value: this.stats.totalEmployees || 0, icon: "👥" }
       ];
     },
-    filteredHierarchy() {
-      if (!this.search) return this.users;
-      const q = this.search.toLowerCase();
-      return this.users.filter(area => 
-        area.Name?.toLowerCase().includes(q) || 
-        area.employer?.businessName?.toLowerCase().includes(q)
-      );
+    filteredData() {
+      if (!this.searchQuery) return this.users;
+      const q = this.searchQuery.toLowerCase();
+      return this.users.filter(emp => emp.businessName?.toLowerCase().includes(q));
     },
+    modalTitle() {
+      if (this.modalMode === 'add') return 'Create New Employer';
+      if (this.modalMode === 'edit') return 'Update Business Details';
+      return 'Confirm Deletion';
+    },
+    submitButtonText() {
+      if (this.modalMode === 'add') return 'Create Employer';
+      if (this.modalMode === 'edit') return 'Save Changes';
+      return 'Delete Forever';
+    }
   },
-  async mounted() {
-    await Promise.all([this.loadStats(), this.loadUsers()]);
-  },
+  async mounted() { await this.refreshData(); },
   methods: {
-    async loadStats() {
-      this.statsLoading = true;
-      try {
-        const { data } = await AdminServices.getStats();
-        this.stats = data;
-      } catch (err) {
-        this.statsError = "Could not load stats.";
-      } finally {
-        this.statsLoading = false;
-      }
-    },
-    async loadUsers() {
+    async refreshData() {
       this.usersLoading = true;
       try {
-        const { data } = await AdminServices.getUsers();
-        // data should be BusinessArea[] including Employers and Staff
-        this.users = data;
-      } catch (err) {
-        this.usersError = "Could not load organization data.";
-      } finally {
-        this.usersLoading = false;
-      }
+        const [sRes, uRes] = await Promise.all([AdminServices.getStats(), AdminServices.getUsers()]);
+        this.stats = sRes.data;
+        this.users = uRes.data;
+      } catch (err) { console.error("Refresh failed:", err); }
+      finally { this.usersLoading = false; this.statsLoading = false; }
     },
-    initials(name = "") {
-      return name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
+    openModal(mode, data = null) {
+      this.modalMode = mode;
+      if (mode === 'edit' && data) {
+        this.currentId = data.employerid;
+        this.form = { 
+          businessName: data.businessName,
+          firstName: data.firstName,
+          lastName: data.lastName,
+          email: data.email,
+          location: data.location || ""
+        };
+      } else {
+        this.form = { businessName: "", firstName: "", lastName: "", email: "", location: "" };
+      }
+      this.showModal = true;
+    },
+    confirmDelete(type, data) {
+      this.modalMode = 'delete';
+      this.deleteType = type;
+      this.currentId = type === 'employer' ? data.employerid : data.EmployeeID;
+      this.deleteTargetName = type === 'employer' ? data.businessName : `${data.firstName} ${data.lastName}`;
+      this.showModal = true;
+    },
+    closeModal() { this.showModal = false; },
+
+    async handleSubmit() {
+      try {
+        const payload = {
+          firstName: this.form.firstName,
+          lastName: this.form.lastName,
+          email: this.form.email,
+          businessName: this.form.businessName,
+          location: this.form.location || "Not Specified", 
+          phoneNum: "",
+          niche: "",
+          operatingHours: "",
+          description: ""
+        };
+
+        if (this.modalMode === 'add') {
+          await AdminServices.createUser(payload);
+        } else if (this.modalMode === 'edit') {
+          await AdminServices.updateUser(this.currentId, payload);
+        } else if (this.modalMode === 'delete') {
+          if (this.deleteType === 'employer') {
+            await AdminServices.deleteUser(this.currentId);
+          } else {
+            await AdminServices.deleteEmployee(this.currentId);
+          }
+        }
+        this.closeModal();
+        await this.refreshData();
+      } catch (err) { 
+        console.error("Submission Error Details:", err.response?.data || err);
+        const msg = err.response?.data?.message || "Internal Server Error";
+        alert(`Action Failed: ${msg}`); 
+      }
     },
     handleLogout() {
       this.$store.commit("setLoginUser", null);
       this.$router.push({ name: "login" });
-    },
-  },
+    }
+  }
 };
 </script>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=Syne:wght@700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Outfit:wght@600;700&display=swap');
 
-/* --- Existing Styles --- */
-.admin-page { display: flex; width: 100%; min-height: 100vh; background: #0e1117; font-family: 'DM Sans', sans-serif; color: #e2e8f0; }
-.sidebar { width: 200px; flex-shrink: 0; background: #151b26; border-right: 1px solid #1e2a3a; display: flex; flex-direction: column; padding: 28px 16px 24px; }
-.sidebar-logo { display: flex; align-items: center; gap: 10px; padding: 0 8px; flex-grow: 1; }
-.logo-mark { font-size: 22px; color: #3b82f6; }
-.logo-text { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 18px; color: #f1f5f9; }
-.main { flex-grow: 1; padding: 40px 48px; overflow-x: auto; }
+.admin-page { display: flex; min-height: 100vh; background: #0b0e14; color: #f1f5f9; font-family: 'Inter', sans-serif; }
+.sidebar { width: 220px; background: #11141d; border-right: 1px solid #1e293b; padding: 30px 20px; display: flex; flex-direction: column; position: sticky; top: 0; height: 100vh; }
+.sidebar-logo { display: flex; align-items: center; gap: 10px; margin-bottom: auto; }
+.logo-mark { color: #3b82f6; font-size: 24px; }
+.logo-text { font-family: 'Outfit', sans-serif; font-weight: 700; font-size: 19px; }
+.sidebar-footer { border-top: 1px solid #1e293b; padding-top: 20px; }
+.admin-badge { display: flex; align-items: center; gap: 8px; font-size: 13px; margin-bottom: 12px; }
+.admin-dot { width: 7px; height: 7px; background: #22c55e; border-radius: 50%; }
+.logout-btn { width: 100%; padding: 8px; background: #1e293b; border: none; color: #f87171; border-radius: 6px; cursor: pointer; font-weight: 500; }
 
-/* --- Hierarchy Styles --- */
-.area-group { margin-bottom: 32px; background: #151b26; border: 1px solid #1e2a3a; border-radius: 12px; overflow: hidden; }
-.area-header { background: #1e2a3a; padding: 16px 20px; border-bottom: 1px solid #2d3f55; }
-.area-title { display: flex; align-items: center; gap: 12px; }
-.area-title h3 { font-family: 'Syne', sans-serif; font-size: 18px; color: #f1f5f9; margin: 0; }
-.badge { font-size: 10px; background: #0e1117; padding: 2px 8px; border-radius: 4px; color: #64748b; }
+.main { flex-grow: 1; padding: 40px 60px; max-width: 1300px; }
+.page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 32px; }
+h1 { font-family: 'Outfit', sans-serif; font-size: 32px; margin: 0; }
+.page-sub { color: #94a3b8; font-size: 15px; }
+.btn-primary { background: #3b82f6; color: white; border: none; padding: 12px 24px; border-radius: 10px; font-weight: 600; cursor: pointer; }
 
-.employer-section { padding: 20px; }
-.employer-info { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px; padding-bottom: 16px; border-bottom: 1px dashed #1e2a3a; }
-.biz-name { font-family: 'Syne', sans-serif; font-size: 20px; font-weight: 700; color: #3b82f6; }
-.biz-owner { font-size: 14px; color: #94a3b8; }
-.biz-contact { text-align: right; }
+.stats-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 24px; margin-bottom: 40px; }
+.stat-card { background: #11141d; border: 1px solid #1e293b; padding: 24px; border-radius: 16px; }
+.stat-label { font-size: 11px; color: #64748b; font-weight: 700; text-transform: uppercase; margin-bottom: 15px; }
+.stat-flex { display: flex; justify-content: space-between; align-items: flex-end; }
+.stat-value { font-family: 'Outfit', sans-serif; font-size: 36px; margin: 0; }
 
-.stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 16px; margin-bottom: 48px; }
-.stat-card { background: #151b26; border: 1px solid #1e2a3a; border-radius: 12px; padding: 22px 20px; }
-.stat-label { font-size: 12px; font-weight: 600; color: #475569; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 10px; }
-.stat-value { font-family: 'Syne', sans-serif; font-size: 30px; font-weight: 700; color: #f1f5f9; }
+.search-bar { background: #11141d; border: 1px solid #1e293b; border-radius: 12px; padding: 14px 20px; display: flex; align-items: center; gap: 12px; margin-bottom: 40px; }
+.search-bar input { background: transparent; border: none; color: white; width: 100%; outline: none; }
 
-/* --- Table Styles --- */
-.table-card { background: #0e1117; border: 1px solid #1e2a3a; border-radius: 8px; overflow: hidden; }
-.user-table { width: 100%; border-collapse: collapse; }
-.user-table th { padding: 12px 16px; text-align: left; font-size: 11px; color: #475569; text-transform: uppercase; }
-.user-table td { padding: 13px 16px; font-size: 14px; border-bottom: 1px solid #1a2332; }
-.user-cell { display: flex; align-items: center; gap: 10px; }
-.avatar { width: 32px; height: 32px; border-radius: 50%; background: #1e3a5f; color: #60a5fa; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; }
+.employer-block { background: #11141d; border: 1px solid #1e293b; border-radius: 16px; margin-bottom: 40px; overflow: hidden; }
+.employer-info-bar { background: #161b26; padding: 20px 24px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #1e293b; }
+.biz-meta { display: flex; align-items: center; gap: 16px; }
+.biz-initials { width: 45px; height: 45px; background: #3b82f6; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-weight: 700; }
+.biz-name { font-size: 20px; margin: 0; }
+.biz-owner { font-size: 14px; color: #94a3b8; margin: 0; }
+.contact-pill { background: #0b0e14; padding: 6px 14px; border-radius: 20px; font-size: 13px; color: #3b82f6; border: 1px solid #1e293b; }
 
-.pill { padding: 3px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; }
-.pill-employer { background: #1a3a2a; color: #4ade80; }
-.td-muted { color: #64748b; }
-.row-actions { display: flex; gap: 8px; }
-.act-edit { background: #1e3a5f; color: #60a5fa; border:none; padding: 5px 12px; border-radius: 4px; cursor:pointer;}
-.act-del { background: #2d1a1a; color: #f87171; border:none; padding: 5px 12px; border-radius: 4px; cursor:pointer;}
-.btn-primary { padding: 10px 20px; background: #3b82f6; color: #fff; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; }
+.staff-container { padding: 24px; }
+.staff-header { display: flex; justify-content: space-between; margin-bottom: 20px; }
+.staff-header h3 { font-size: 16px; font-weight: 600; color: #f1f5f9; margin: 0; }
+.staff-count { font-size: 12px; color: #64748b; background: #1e293b; padding: 2px 10px; border-radius: 10px; }
+.staff-table { width: 100%; border-collapse: collapse; }
+.staff-table th { text-align: left; padding: 12px; color: #475569; font-size: 11px; text-transform: uppercase; border-bottom: 1px solid #1e293b; }
+.staff-table td { padding: 16px 12px; border-bottom: 1px solid #161b26; font-size: 14px; }
+.text-right { text-align: right; }
+.btn-text-del { background: transparent; border: none; color: #ef4444; cursor: pointer; font-size: 13px; }
+.edit-icon-btn { background: none; border: none; cursor: pointer; color: #94a3b8; font-size: 18px; }
 
-.table-empty { padding: 40px; text-align: center; color: #475569; }
-.font-mono { font-family: monospace; }
+.modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.85); display: flex; align-items: center; justify-content: center; z-index: 1000; backdrop-filter: blur(5px); }
+.modal-content { background: #11141d; border: 1px solid #1e293b; width: 500px; border-radius: 20px; box-shadow: 0 20px 50px rgba(0,0,0,0.5); }
+.modal-header { padding: 24px; border-bottom: 1px solid #1e293b; display: flex; justify-content: space-between; align-items: center; }
+.modal-header h2 { margin: 0; font-size: 20px; font-family: 'Outfit'; }
+.modal-body { padding: 24px; }
+.input-group { margin-bottom: 20px; display: flex; flex-direction: column; }
+.input-row { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; width: 100%; box-sizing: border-box; }
+label { font-size: 11px; color: #64748b; margin-bottom: 8px; text-transform: uppercase; font-weight: 700; }
+input { background: #0b0e14; border: 1px solid #1e293b; padding: 12px; border-radius: 8px; color: white; outline: none; width: 100%; box-sizing: border-box; }
+input:focus { border-color: #3b82f6; }
+.modal-footer { padding: 24px; border-top: 1px solid #1e293b; display: flex; justify-content: flex-end; gap: 12px; }
+.btn-cancel { background: transparent; border: 1px solid #1e293b; color: #94a3b8; padding: 10px 20px; border-radius: 8px; cursor: pointer; }
+.btn-save { background: #3b82f6; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600; }
+.btn-del-confirm { background: #ef4444; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600; }
+.close-x { background: none; border: none; color: #64748b; font-size: 24px; cursor: pointer; }
+.warning-text { color: #f87171; font-size: 13px; }
+.loading-state { text-align: center; padding: 100px; }
+.spinner { width: 30px; height: 30px; border: 3px solid #1e293b; border-top-color: #3b82f6; border-radius: 50%; animation: spin 1s infinite linear; margin: 0 auto; }
+@keyframes spin { to { transform: rotate(360deg); } }
 </style>
