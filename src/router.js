@@ -18,6 +18,7 @@ import Utils from "./config/utils.js";
 import EmployerTradeboard from "./views/EmployerTradeboard.vue";
 import AdminLogin from "./views/AdminLogin.vue";
 import AdminDashboard from "./views/AdminDashboard.vue";
+import EmployeeTimeClock from "./views/EmployeeTimeClock.vue";
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -112,6 +113,11 @@ const router = createRouter({
           path: "settings",
           name: "employeeSettings",
           component: EmployeeSettings,
+        },
+        {
+          path: "timeclock",
+          name: "employeeTimeClock",
+          component: EmployeeTimeClock,
         },
       ],
     },

@@ -13,6 +13,7 @@ const defaultDevBaseUrl = `http://localhost:3100${apiPath}`;
 const defaultProdBaseUrl = apiPath;
 
 
+
 // 2. Fix the "Helper" function to look for the right name
 const normalizeBaseUrl = (url) => {
   if (!url) return url;
