@@ -85,6 +85,17 @@
                 </v-card-actions>
             </v-card>
         </v-dialog>
+        <v-dialog v-model="confirmDialog.show" max-width="400">
+            <v-card>
+                <v-card-title class="headline">{{ confirmDialog.title }}</v-card-title>
+                <v-card-text>{{ confirmDialog.message }}</v-card-text>
+                <v-card-actions>
+                    <v-spacer></v-spacer>
+                    <v-btn color="grey" text @click="confirmDialog.show = false">Cancel</v-btn>
+                    <v-btn color="primary" text @click="executeConfirmedAction">Confirm</v-btn>
+                </v-card-actions>
+            </v-card>
+        </v-dialog>
     </div>
 </template>
 
@@ -100,7 +111,14 @@ export default {
             showAddModal: false,
             availableShifts: [],
             selectedShift: null,
-            addModalMessage: ""
+            addModalMessage: "",
+            confirmDialog: {
+                show: false,
+                title: "",
+                message: "",
+                action: null, // We will store the function to run here
+                payload: null
+            }
         };
     },
     watch: {
@@ -158,13 +176,49 @@ export default {
             }
         },
 
-        async approveTrade(id) {
-            if (confirm("Accept this trade? The schedule will be updated automatically.")) {
-                await TradeService.approveTrade(id);
-                this.loadTrades();
-            }
+        approveTrade(id) {
+            this.confirmDialog = {
+                show: true,
+                title: "Approve Trade",
+                message: "Are you sure you want to accept this trade?",
+                action: 'approve',
+                payload: id
+            };
         },
 
+        declineTrade(id) {
+            this.confirmDialog = {
+                show: true,
+                title: "Decline Trade Request",
+                message: "Are you sure you want to decline this request? The shift will remain 'Available' for others to claim.",
+                action: 'decline',
+                payload: id
+            };
+        },
+
+        async executeConfirmedAction() {
+            this.confirmDialog.show = false;
+            const { action, payload } = this.confirmDialog;
+
+            try {
+                if (action === 'approve') {
+                    await TradeService.approveTrade(payload);
+                }
+                else if (action === 'delete') {
+                    await TradeService.deleteTrade(payload);
+                }
+                else if (action === 'decline') {
+                    // You'll need to create this endpoint in your backend
+                    // It basically resets status to 'Available' and RequesterID to null
+                    await TradeService.declineTrade(payload);
+                }
+
+                this.loadTrades(); // Refresh the board
+            } catch (err) {
+                console.error("Action failed", err);
+            }
+        },
+        
         async removeTrade(id) {
             if (confirm("Remove this from the board?")) {
                 await TradeService.deleteTrade(id);
