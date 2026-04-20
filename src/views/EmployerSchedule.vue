@@ -12,21 +12,21 @@
 
     <div class="schedule-toolbar">
       <div class="week-nav">
-        <button class="icon-button" @click="goToPreviousWeek">
+        <button type="button" class="icon-button" @click="goToPreviousWeek">
           <v-icon size="20">mdi-chevron-left</v-icon>
         </button>
         <strong>Week of {{ weekLabel }}</strong>
-        <button class="icon-button" @click="goToNextWeek">
+        <button type="button" class="icon-button" @click="goToNextWeek">
           <v-icon size="20">mdi-chevron-right</v-icon>
         </button>
       </div>
 
       <div class="actions">
-        <button class="ghost-button" @click="openTemplateDialog">
+        <button type="button" class="ghost-button" @click="openTemplateDialog">
           <v-icon size="18">mdi-content-copy</v-icon>
           Templates
         </button>
-        <button class="primary-button" @click="openNewShiftDialog()">
+        <button type="button" class="primary-button" @click="openNewShiftDialog()">
           <v-icon size="18">mdi-plus</v-icon>
           New Shift
         </button>
@@ -70,7 +70,7 @@
       <section class="modal">
         <header>
           <h2>{{ editingShiftId ? "Edit Shift" : "New Shift" }}</h2>
-          <button class="icon-inline" @click="closeShiftDialog">
+          <button type="button" class="icon-inline" @click="closeShiftDialog">
             <v-icon>mdi-close</v-icon>
           </button>
         </header>
@@ -118,15 +118,15 @@
         </select>
 
         <footer>
-          <button
+          <button type="button"
             v-if="editingShiftId"
             class="ghost-button danger-button footer-left"
             @click="deleteEditingShift"
           >
             Delete Shift
           </button>
-          <button class="ghost-button" @click="closeShiftDialog">Cancel</button>
-          <button class="primary-button" @click="saveShift">
+          <button type="button" class="ghost-button" @click="closeShiftDialog">Cancel</button>
+          <button type="button" class="primary-button" @click="saveShift">
             {{ editingShiftId ? "Update Shift" : "Save Shift" }}
           </button>
         </footer>
@@ -137,17 +137,17 @@
       <section class="modal template-modal">
         <header>
           <h2>Schedule Templates</h2>
-          <button class="icon-inline" @click="templateDialog = false">
+          <button type="button" class="icon-inline" @click="templateDialog = false">
             <v-icon>mdi-close</v-icon>
           </button>
         </header>
 
         <div class="template-actions">
-          <button class="primary-button" @click="generateSuggestedWeek">
+          <button type="button" class="primary-button" @click="generateSuggestedWeek">
             <v-icon size="18">mdi-auto-fix</v-icon>
             Generate Suggested Week
           </button>
-          <button class="ghost-button" @click="saveCurrentWeekAsTemplate">
+          <button type="button" class="ghost-button" @click="saveCurrentWeekAsTemplate">
             <v-icon size="18">mdi-content-save-outline</v-icon>
             Save Current Week
           </button>
@@ -164,10 +164,10 @@
               <p>{{ template.description || "Saved schedule template" }}</p>
             </div>
             <div class="template-card-actions">
-              <button class="primary-button small-button" @click="applyTemplate(template)">
+              <button type="button" class="primary-button small-button" @click="promptApplyTemplate(template)">
                 Apply
               </button>
-              <button class="ghost-button small-button" @click="deleteTemplate(template.id)">
+              <button type="button" class="ghost-button small-button" @click="promptDeleteTemplate(template.id)">
                 Delete
               </button>
             </div>
@@ -177,7 +177,104 @@
         <p v-else class="muted">No templates saved yet.</p>
 
         <footer>
-          <button class="ghost-button" @click="templateDialog = false">Close</button>
+          <button type="button" class="ghost-button" @click="templateDialog = false">Close</button>
+        </footer>
+      </section>
+    </div>
+
+    <div v-if="templateSaveDialog" class="overlay">
+      <section class="modal template-save-modal">
+        <header>
+          <h2>Save Template</h2>
+          <button type="button" class="icon-inline" @click="closeTemplateSaveDialog">
+            <v-icon>mdi-close</v-icon>
+          </button>
+        </header>
+
+        <label>Template Name</label>
+        <input 
+          v-model="templateName" 
+          type="text" 
+          placeholder="e.g., Standard Weekly Schedule"
+          class="full-width"
+        />
+
+        <label>Description (Optional)</label>
+        <textarea
+          v-model="templateDescription"
+          placeholder="Add notes about this template..."
+          class="full-width"
+          rows="3"
+        ></textarea>
+
+        <div class="template-preview">
+          <h3>Week Preview</h3>
+          <p class="muted">{{ weekLabel }}</p>
+          
+          <table class="shifts-table">
+            <thead>
+              <tr>
+                <th>Day</th>
+                <th>Employee</th>
+                <th>Position</th>
+                <th>Time</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="(shift, index) in shiftsForCurrentWeek" :key="index">
+                <td>
+                  <span class="day-label" :style="{ 
+                    borderLeft: `4px solid ${getPositionColor(shift.position)}` 
+                  }">
+                    {{ formatDateDay(shift.date) }}
+                  </span>
+                </td>
+                <td>{{ shift.employeeName || "Unassigned" }}</td>
+                <td>
+                  <span class="position-badge" :style="{ 
+                    backgroundColor: getPositionColor(shift.position),
+                    color: 'white'
+                  }">
+                    {{ shift.position || "None" }}
+                  </span>
+                </td>
+                <td>{{ shift.startTime }} - {{ shift.endTime }}</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <p v-if="!shiftsForCurrentWeek.length" class="muted">No shifts to save.</p>
+        </div>
+
+        <footer>
+          <button type="button" class="ghost-button" @click="closeTemplateSaveDialog">Cancel</button>
+          <button type="button" 
+            class="primary-button" 
+            @click="confirmTemplateSave"
+            :disabled="!templateName.trim()"
+          >
+            Save Template
+          </button>
+        </footer>
+      </section>
+    </div>
+
+    <div v-if="confirmDialog" class="overlay">
+      <section class="modal confirm-modal">
+        <header>
+          <h2>{{ confirmDialogTitle }}</h2>
+          <button type="button" class="icon-inline" @click="cancelConfirmDialog">
+            <v-icon>mdi-close</v-icon>
+          </button>
+        </header>
+
+        <p class="confirm-message">{{ confirmDialogMessage }}</p>
+
+        <footer>
+          <button type="button" class="ghost-button" @click="cancelConfirmDialog">Cancel</button>
+          <button type="button" class="primary-button" @click="confirmDialogSubmit">
+            {{ confirmDialogPrimary }}
+          </button>
         </footer>
       </section>
     </div>
@@ -376,6 +473,15 @@ export default defineComponent({
         endTime: "17:00",
         taskListId: null,
       },
+      templateSaveDialog: false,
+      templateName: "",
+      templateDescription: "",
+      confirmDialog: false,
+      confirmDialogTitle: "",
+      confirmDialogMessage: "",
+      confirmDialogPrimary: "",
+      confirmDialogTemplate: null,
+      confirmDialogHandler: null,
     };
   },
   computed: {
@@ -717,8 +823,21 @@ export default defineComponent({
       }
       return null;
     },
+    promptDeleteShift(shiftId) {
+      if (!shiftId) {
+        return;
+      }
+      this.openConfirmDialog({
+        title: "Delete Shift",
+        message: "Delete this shift? This action cannot be undone.",
+        primary: "Delete Shift",
+        handler: async () => {
+          await this.deleteShift(shiftId);
+        },
+      });
+    },
     async deleteShift(shiftId) {
-      if (!shiftId || !window.confirm("Delete this shift?")) {
+      if (!shiftId) {
         return;
       }
 
@@ -733,7 +852,7 @@ export default defineComponent({
       }
     },
     deleteEditingShift() {
-      this.deleteShift(this.editingShiftId);
+      this.promptDeleteShift(this.editingShiftId);
     },
     async saveShift() {
       if (!this.newShift.date || !this.newShift.startTime || !this.newShift.endTime || !this.newShift.position) {
@@ -753,15 +872,23 @@ export default defineComponent({
 
       const availabilityConflict = this.getAvailabilityConflictText(payload);
       if (availabilityConflict) {
-        const shouldContinue = window.confirm(`${availabilityConflict} Do you still want to save this shift?`);
         this.warningMessage = availabilityConflict;
-        if (!shouldContinue) {
-          return;
-        }
+        this.openConfirmDialog({
+          title: "Confirm Shift Save",
+          message: `${availabilityConflict} Do you still want to save this shift?`,
+          primary: "Save Anyway",
+          handler: async () => {
+            await this.submitShiftSave(payload, selectedEmployee);
+          },
+        });
+        return;
       } else {
         this.warningMessage = "";
       }
 
+      await this.submitShiftSave(payload, selectedEmployee);
+    },
+    async submitShiftSave(payload, selectedEmployee) {
       try {
         const saveRequest = this.editingShiftId
           ? SchedulerServices.updateShift(this.editingShiftId, payload)
@@ -808,11 +935,21 @@ export default defineComponent({
       }
     },
     async saveCurrentWeekAsTemplate() {
-      const name = window.prompt("Enter a name for this template:");
-      if (!name) {
+      if (!this.shiftsForCurrentWeek.length) {
+        this.warningMessage = "There are no shifts in the current week to save as a template.";
         return;
       }
 
+      this.templateName = `Week of ${this.weekLabel}`;
+      this.templateDescription = "";
+      this.templateSaveDialog = true;
+    },
+    closeTemplateSaveDialog() {
+      this.templateSaveDialog = false;
+      this.templateName = "";
+      this.templateDescription = "";
+    },
+    async confirmTemplateSave() {
       const shifts = this.shiftsForCurrentWeek.map((shift) => {
         const shiftDate = parseIsoDate(shift.date);
         return {
@@ -824,31 +961,44 @@ export default defineComponent({
         };
       });
 
-      if (!shifts.length) {
-        this.warningMessage = "There are no shifts in the current week to save as a template.";
-        return;
-      }
-
       try {
         await TemplateServices.createTemplate({
-          name,
-          description: `Saved from week of ${this.weekLabel}`,
+          name: this.templateName,
+          description: this.templateDescription || `Saved from week of ${this.weekLabel}`,
           shifts,
         });
         this.successMessage = "Template saved successfully.";
+        this.closeTemplateSaveDialog();
         await this.loadTemplates();
       } catch (error) {
+        this.warningMessage = "Failed to save template. Please try again.";
         console.log("error", error);
       }
     },
+    formatDateDay(isoDate) {
+      const date = parseIsoDate(isoDate);
+      if (!date) return "";
+      const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+      return `${days[date.getDay()]} ${date.getMonth() + 1}/${date.getDate()}`;
+    },
+    openConfirmDialog({ title, message, primary, handler }) {
+      this.confirmDialogTitle = title;
+      this.confirmDialogMessage = message;
+      this.confirmDialogPrimary = primary;
+      this.confirmDialogHandler = handler;
+      this.confirmDialog = true;
+    },
+    promptApplyTemplate(template) {
+      this.openConfirmDialog({
+        title: "Apply Template",
+        message: `Apply the template "${template.name}" to the current week and replace the existing shifts? This action cannot be undone.`,
+        primary: "Apply Template",
+        handler: async () => {
+          await this.applyTemplate(template);
+        },
+      });
+    },
     async applyTemplate(template) {
-      const shouldReplace = window.confirm(
-        "Apply this template to the current week and replace the existing shifts for this week?",
-      );
-      if (!shouldReplace) {
-        return;
-      }
-
       const shifts = (template.shifts || []).map((shift) => {
         const offset = shift.dayOfWeek === 0 ? 6 : shift.dayOfWeek - 1;
         const date = new Date(this.currentWeekStart);
@@ -864,6 +1014,20 @@ export default defineComponent({
 
       await this.replaceCurrentWeekWithShifts(shifts, `Applied template "${template.name}".`);
       this.templateDialog = false;
+    },
+    cancelConfirmDialog() {
+      this.confirmDialog = false;
+      this.confirmDialogTitle = "";
+      this.confirmDialogMessage = "";
+      this.confirmDialogPrimary = "";
+      this.confirmDialogTemplate = null;
+      this.confirmDialogHandler = null;
+    },
+    async confirmDialogSubmit() {
+      if (typeof this.confirmDialogHandler === "function") {
+        await this.confirmDialogHandler();
+      }
+      this.cancelConfirmDialog();
     },
     buildSuggestedWeekBlueprints() {
       const businessWindow = parseOperatingHours(this.employerProfile?.operatingHours);
@@ -920,24 +1084,31 @@ export default defineComponent({
         return;
       }
 
-      const shouldReplace = window.confirm(
-        "Generate a suggested week and replace the current week's shifts? You can still edit the result afterward.",
-      );
-      if (!shouldReplace) {
-        return;
-      }
-
-      await this.replaceCurrentWeekWithShifts(
-        generatedShifts,
-        "Suggested weekly schedule generated. Review and tweak it as needed.",
-      );
-      this.templateDialog = false;
+      this.openConfirmDialog({
+        title: "Generate Suggested Week",
+        message:
+          "Generate a suggested week and replace the current week's shifts? You can still edit the result afterward.",
+        primary: "Generate Week",
+        handler: async () => {
+          await this.replaceCurrentWeekWithShifts(
+            generatedShifts,
+            "Suggested weekly schedule generated. Review and tweak it as needed.",
+          );
+          this.templateDialog = false;
+        },
+      });
+    },
+    promptDeleteTemplate(id) {
+      this.openConfirmDialog({
+        title: "Delete Template",
+        message: "Delete this template? This action cannot be undone.",
+        primary: "Delete Template",
+        handler: async () => {
+          await this.deleteTemplate(id);
+        },
+      });
     },
     async deleteTemplate(id) {
-      if (!window.confirm("Delete this template?")) {
-        return;
-      }
-
       try {
         await TemplateServices.deleteTemplate(id);
         await this.loadTemplates();
@@ -1502,6 +1673,102 @@ p {
   align-items: flex-start;
 }
 
+.template-save-modal {
+  max-width: 700px;
+}
+
+.confirm-modal {
+  max-width: 520px;
+}
+
+.confirm-message {
+  margin-top: 14px;
+  color: #4b5563;
+  line-height: 1.6;
+}
+
+.confirm-modal footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.template-preview {
+  margin-top: 18px;
+  padding-top: 18px;
+  border-top: 1px solid #e7ebf3;
+}
+
+.template-preview h3 {
+  margin-bottom: 6px;
+  font-size: 16px;
+}
+
+.shifts-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 12px;
+  font-size: 13px;
+}
+
+.shifts-table thead {
+  background: #f5f7fb;
+}
+
+.shifts-table th {
+  padding: 10px 6px;
+  text-align: left;
+  font-weight: 600;
+  color: #223047;
+  border-bottom: 1px solid #e7ebf3;
+}
+
+.shifts-table td {
+  padding: 10px 6px;
+  border-bottom: 1px solid #f0f2f7;
+}
+
+.shifts-table tbody tr:hover {
+  background: #fbfcff;
+}
+
+.day-label {
+  padding: 4px 8px;
+  display: inline-block;
+  font-weight: 600;
+  color: #223047;
+}
+
+.position-badge {
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  display: inline-block;
+}
+
+.modal textarea {
+  width: 100%;
+  border: none;
+  background: #f1f2f7;
+  border-radius: 12px;
+  padding: 11px 16px;
+  outline: none;
+  font-family: inherit;
+  resize: vertical;
+  margin-bottom: 6px;
+}
+
+.full-width {
+  width: 100%;
+}
+
+.primary-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 @media (max-width: 980px) {
   .tab-content {
     padding: 0 14px 18px;
@@ -1521,3 +1788,4 @@ p {
   }
 }
 </style>
+
