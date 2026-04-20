@@ -54,10 +54,11 @@ export default {
       AuthServices.loginUser(token)
         .then((response) => {
           this.user = response.data;
+          const nextRoute = Utils.getDefaultRouteForUser(this.user);
           Utils.setStore("user", this.user);
           this.fName = this.user.fName;
           this.lName = this.user.lName;
-          this.$router.push({ name: "roleSelection" });
+          this.$router.replace(nextRoute);
         })
         .catch((error) => {
           console.log("error", error);

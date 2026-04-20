@@ -40,6 +40,7 @@
 
 <script>
 import AuthServices from "@/services/authServices";
+import Utils from "@/config/utils";
 
 export default {
   name: "Login",
@@ -120,8 +121,9 @@ export default {
           credential: response.credential,
         });
 
+        const nextRoute = Utils.getDefaultRouteForUser(data);
         this.$store.commit("setLoginUser", data);
-        this.$router.push({ name: "roleSelection" });
+        this.$router.replace(nextRoute);
       } catch (error) {
         this.errorMessage =
           error.response?.data?.message ||
