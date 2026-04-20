@@ -143,9 +143,14 @@
         </header>
 
         <div class="template-actions">
-          <button type="button" class="ghost-button" @click="saveCurrentWeekAsTemplate">
+          <button
+            type="button"
+            class="ghost-button"
+            :disabled="isSavingTemplate"
+            @click="saveCurrentWeekAsTemplate"
+          >
             <v-icon size="18">mdi-content-save-outline</v-icon>
-            Save Current Week
+            {{ isSavingTemplate ? "Saving Current Week..." : "Save Current Week" }}
           </button>
         </div>
 
@@ -178,83 +183,6 @@
 
         <footer>
           <button type="button" class="ghost-button" @click="templateDialog = false">Close</button>
-        </footer>
-      </section>
-    </div>
-
-    <div v-if="templateSaveDialog" class="overlay">
-      <section class="modal template-save-modal">
-        <header>
-          <h2>Save Template</h2>
-          <button type="button" class="icon-inline" @click="closeTemplateSaveDialog">
-            <v-icon>mdi-close</v-icon>
-          </button>
-        </header>
-
-        <label>Template Name</label>
-        <input 
-          v-model="templateName" 
-          type="text" 
-          placeholder="e.g., Standard Weekly Schedule"
-          class="full-width"
-        />
-
-        <label>Description (Optional)</label>
-        <textarea
-          v-model="templateDescription"
-          placeholder="Add notes about this template..."
-          class="full-width"
-          rows="3"
-        ></textarea>
-
-        <div class="template-preview">
-          <h3>Week Preview</h3>
-          <p class="muted">{{ weekLabel }}</p>
-          
-          <table class="shifts-table">
-            <thead>
-              <tr>
-                <th>Day</th>
-                <th>Employee</th>
-                <th>Position</th>
-                <th>Time</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="(shift, index) in shiftsForCurrentWeek" :key="index">
-                <td>
-                  <span class="day-label" :style="{ 
-                    borderLeft: `4px solid ${getPositionColor(shift.position)}` 
-                  }">
-                    {{ formatDateDay(shift.date) }}
-                  </span>
-                </td>
-                <td>{{ shift.employeeName || "Unassigned" }}</td>
-                <td>
-                  <span class="position-badge" :style="{ 
-                    backgroundColor: getPositionColor(shift.position),
-                    color: 'white'
-                  }">
-                    {{ shift.position || "None" }}
-                  </span>
-                </td>
-                <td>{{ shift.startTime }} - {{ shift.endTime }}</td>
-              </tr>
-            </tbody>
-          </table>
-
-          <p v-if="!shiftsForCurrentWeek.length" class="muted">No shifts to save.</p>
-        </div>
-
-        <footer>
-          <button type="button" class="ghost-button" @click="closeTemplateSaveDialog">Cancel</button>
-          <button type="button" 
-            class="primary-button" 
-            @click="confirmTemplateSave"
-            :disabled="!templateName.trim()"
-          >
-            Save Template
-          </button>
         </footer>
       </section>
     </div>
@@ -380,12 +308,19 @@ const toTimeString = (totalMinutes) => {
 };
 
 const formatSlotLabel = (startTime, endTime) => `${startTime} - ${endTime}`;
+const DEFAULT_START_MINUTES = 7 * 60;
+const DEFAULT_END_MINUTES = 22 * 60;
 
-const buildDefaultSlots = () => {
+const buildDefaultSlots = (startMinutes = DEFAULT_START_MINUTES, endMinutes = DEFAULT_END_MINUTES) => {
   const slots = [];
-  for (let hour = 7; hour < 22; hour += 1) {
-    const startTime = `${String(hour).padStart(2, "0")}:00`;
-    const endTime = `${String(hour + 1).padStart(2, "0")}:00`;
+  const normalizedStart = Math.max(0, Math.min(startMinutes, 23 * 60));
+  const normalizedEnd = Math.max(normalizedStart + 60, Math.min(endMinutes, 24 * 60));
+  const firstSlot = Math.floor(normalizedStart / 60) * 60;
+
+  for (let slotStart = firstSlot; slotStart < normalizedEnd; slotStart += 60) {
+    const slotEnd = Math.min(slotStart + 60, 24 * 60);
+    const startTime = toTimeString(slotStart);
+    const endTime = toTimeString(slotEnd);
     slots.push({
       key: `${startTime}-${endTime}`,
       startTime,
@@ -417,12 +352,38 @@ const extractPositionOptions = (niche) => {
 
 const parseOperatingHours = (value) => {
   const raw = String(value || "").trim();
-  const match = raw.match(/(\d{1,2})(?::(\d{2}))?\s*(am|pm)?\s*-\s*(\d{1,2})(?::(\d{2}))?\s*(am|pm)?/i);
+  const timeMatches = Array.from(
+    raw.matchAll(/(\d{1,2})(?:[:.](\d{2}))?\s*(a\.?m\.?|p\.?m\.?|am|pm)?/gi),
+  ).filter((match) => {
+    const hour = Number(match[1]);
+    const minute = Number(match[2] || "0");
+    return hour >= 0 && hour <= 24 && minute >= 0 && minute < 60;
+  });
 
-  const to24HourMinutes = (hourValue, minuteValue, meridiem) => {
-    let hour = Number(hourValue);
-    const minute = Number(minuteValue || "0");
-    const mer = String(meridiem || "").toLowerCase();
+  const normalizeMeridiem = (value) => {
+    const normalized = String(value || "").toLowerCase().replace(/\./g, "");
+    if (normalized === "am" || normalized === "pm") {
+      return normalized;
+    }
+    return "";
+  };
+
+  const inferMeridiem = (hour, meridiem, pairedMeridiem, isStart) => {
+    if (meridiem) {
+      return meridiem;
+    }
+
+    if (pairedMeridiem === "pm" && isStart && hour < 12) {
+      return "am";
+    }
+
+    return "";
+  };
+
+  const to24HourMinutes = (timeToken, pairedMeridiem, isStart) => {
+    let hour = Number(timeToken?.hour || "0");
+    const minute = Number(timeToken?.minute || "0");
+    const mer = inferMeridiem(hour, timeToken?.meridiem || "", pairedMeridiem, isStart);
 
     if (mer === "pm" && hour !== 12) {
       hour += 12;
@@ -439,9 +400,33 @@ const parseOperatingHours = (value) => {
     lower.includes(dayKey),
   );
 
+  const timeTokens = timeMatches.map((match) => ({
+    hour: match[1],
+    minute: match[2] || "0",
+    meridiem: normalizeMeridiem(match[3]),
+  }));
+  const rangeTokens = timeTokens.slice(-2);
+
+  let startMinutes = DEFAULT_START_MINUTES;
+  let endMinutes = DEFAULT_END_MINUTES;
+
+  if (rangeTokens.length >= 2) {
+    const [startToken, endToken] = rangeTokens;
+    startMinutes = to24HourMinutes(startToken, endToken.meridiem, true);
+    endMinutes = to24HourMinutes(endToken, startToken.meridiem, false);
+
+    if (!startToken.meridiem && !endToken.meridiem && endMinutes <= startMinutes && Number(endToken.hour) <= 12) {
+      endMinutes += 12 * 60;
+    }
+  }
+
+  if (endMinutes <= startMinutes) {
+    endMinutes = Math.min(startMinutes + 60, 24 * 60);
+  }
+
   return {
-    startMinutes: match ? to24HourMinutes(match[1], match[2], match[3]) : 9 * 60,
-    endMinutes: match ? to24HourMinutes(match[4], match[5], match[6]) : 17 * 60,
+    startMinutes,
+    endMinutes,
     activeDayKeys: activeDayKeys.length ? activeDayKeys : ["mon", "tue", "wed", "thu", "fri"],
   };
 };
@@ -476,10 +461,11 @@ export default defineComponent({
         endTime: "17:00",
         taskListId: null,
       },
-      templateSaveDialog: false,
       templateName: "",
       templateDescription: "",
       templateMessage: "",
+      isLoadingTemplates: false,
+      isSavingTemplate: false,
       confirmDialog: false,
       confirmDialogTitle: "",
       confirmDialogMessage: "",
@@ -518,6 +504,15 @@ export default defineComponent({
         return shiftDate && shiftDate >= weekStart && shiftDate < weekEnd;
       });
     },
+    businessWindow() {
+      return parseOperatingHours(this.employerProfile?.operatingHours);
+    },
+    calendarSlotMinTime() {
+      return `${toTimeString(this.businessWindow.startMinutes)}:00`;
+    },
+    calendarSlotMaxTime() {
+      return `${toTimeString(this.businessWindow.endMinutes)}:00`;
+    },
     timeSlots() {
       const shiftSlots = this.shiftsForCurrentWeek.map((shift) => ({
         key: `${shift.startTime}-${shift.endTime}`,
@@ -527,7 +522,10 @@ export default defineComponent({
       }));
 
       return Array.from(
-        new Map([...buildDefaultSlots(), ...shiftSlots].map((slot) => [slot.key, slot])).values(),
+        new Map([
+          ...buildDefaultSlots(this.businessWindow.startMinutes, this.businessWindow.endMinutes),
+          ...shiftSlots,
+        ].map((slot) => [slot.key, slot])).values(),
       ).sort((a, b) => toMinutes(a.startTime) - toMinutes(b.startTime));
     },
     unassignedShiftCount() {
@@ -609,8 +607,8 @@ export default defineComponent({
         initialView: 'timeGridWeek',
         initialDate: this.currentWeekStart,
         height: 'auto',
-        slotMinTime: '07:00:00',
-        slotMaxTime: '22:00:00',
+        slotMinTime: this.calendarSlotMinTime,
+        slotMaxTime: this.calendarSlotMaxTime,
         allDaySlot: false,
         editable: true,
         selectable: true,
@@ -630,6 +628,12 @@ export default defineComponent({
   created() {
     this.bootstrapPage();
   },
+  mounted() {
+    window.addEventListener("employer-profile-updated", this.handleEmployerProfileUpdated);
+  },
+  beforeUnmount() {
+    window.removeEventListener("employer-profile-updated", this.handleEmployerProfileUpdated);
+  },
   watch: {
     currentWeekStart() {
       this.$nextTick(() => {
@@ -637,6 +641,9 @@ export default defineComponent({
           this.$refs.calendarRef.getApi().gotoDate(this.currentWeekStart);
         }
       });
+    },
+    "employerProfile.operatingHours"() {
+      this.refreshCalendarBusinessHours();
     }
   },
   methods: {
@@ -729,6 +736,21 @@ export default defineComponent({
         console.log("error", error);
       }
     },
+    async handleEmployerProfileUpdated() {
+      await this.fetchEmployerProfile();
+    },
+    refreshCalendarBusinessHours() {
+      this.$nextTick(() => {
+        const calendarApi = this.$refs.calendarRef?.getApi();
+        if (!calendarApi) {
+          return;
+        }
+
+        calendarApi.setOption("slotMinTime", this.calendarSlotMinTime);
+        calendarApi.setOption("slotMaxTime", this.calendarSlotMaxTime);
+        calendarApi.updateSize();
+      });
+    },
     async fetchTaskLists() {
       try {
         const response = await SchedulerServices.getTaskLists();
@@ -751,11 +773,25 @@ export default defineComponent({
       await this.loadTemplates();
     },
     async loadTemplates() {
+      this.isLoadingTemplates = true;
       try {
         const response = await TemplateServices.getAllTemplates();
-        this.templates = response.data || [];
+        const responseData = response.data;
+        if (Array.isArray(responseData)) {
+          this.templates = responseData;
+        } else if (Array.isArray(responseData?.templates)) {
+          this.templates = responseData.templates;
+        } else {
+          this.templates = [];
+        }
+        return true;
       } catch (error) {
+        this.templates = [];
+        this.templateMessage = "Templates could not be loaded. Please try again.";
         console.log("error", error);
+        return false;
+      } finally {
+        this.isLoadingTemplates = false;
       }
     },
     getShiftsForSlot(isoDate, slot) {
@@ -1027,16 +1063,34 @@ export default defineComponent({
     findTemplateForCurrentWeek() {
       const weekKey = this.currentWeekTemplateKey().toLowerCase();
       const weekName = `week of ${this.weekLabel}`.toLowerCase();
+      const templateList = Array.isArray(this.templates) ? this.templates : [];
 
-      return this.templates.find((template) => {
+      return templateList.find((template) => {
         const name = String(template.name || "").trim().toLowerCase();
         const description = String(template.description || "").trim().toLowerCase();
         return description === weekKey || name === weekName || name.includes(weekName);
       }) || null;
     },
+    buildTemplateShiftsForCurrentWeek() {
+      return this.shiftsForCurrentWeek.map((shift) => {
+        const shiftDate = parseIsoDate(shift.date);
+        return {
+          EmployeeID: shift.EmployeeID || null,
+          position: shift.position || this.positionOptions[0] || "General Staff",
+          startTime: shift.startTime,
+          endTime: shift.endTime,
+          dayOfWeek: shiftDate ? shiftDate.getDay() : 1,
+        };
+      });
+    },
     async saveCurrentWeekAsTemplate() {
+      if (this.isSavingTemplate) {
+        return;
+      }
+
       this.templateMessage = "";
-      await this.loadTemplates();
+      this.warningMessage = "";
+      this.successMessage = "";
 
       if (!this.shiftsForCurrentWeek.length) {
         this.templateMessage = "There are no shifts in the current week to save as a template.";
@@ -1052,47 +1106,29 @@ export default defineComponent({
 
       this.templateName = `Week of ${this.weekLabel}`;
       this.templateDescription = this.currentWeekTemplateKey();
-      this.templateSaveDialog = true;
-    },
-    closeTemplateSaveDialog() {
-      this.templateSaveDialog = false;
-      this.templateName = "";
-      this.templateDescription = "";
-    },
-    async confirmTemplateSave() {
-      await this.loadTemplates();
-      const existingTemplate = this.findTemplateForCurrentWeek();
-      if (existingTemplate) {
-        this.templateMessage =
-          `This week is already saved as "${existingTemplate.name}". Delete that template first if you want to save it again.`;
-        this.closeTemplateSaveDialog();
-        return;
-      }
-
-      const shifts = this.shiftsForCurrentWeek.map((shift) => {
-        const shiftDate = parseIsoDate(shift.date);
-        return {
-          EmployeeID: shift.EmployeeID || null,
-          position: shift.position || this.positionOptions[0] || "General Staff",
-          startTime: shift.startTime,
-          endTime: shift.endTime,
-          dayOfWeek: shiftDate ? shiftDate.getDay() : 1,
-        };
-      });
+      this.isSavingTemplate = true;
 
       try {
         await TemplateServices.createTemplate({
           name: this.templateName,
-          description: this.templateDescription || this.currentWeekTemplateKey(),
-          shifts,
+          description: this.templateDescription,
+          shifts: this.buildTemplateShiftsForCurrentWeek(),
         });
-        this.successMessage = "Template saved successfully.";
-        this.templateMessage = "";
-        this.closeTemplateSaveDialog();
-        await this.loadTemplates();
+        this.templateMessage = `Saved "${this.templateName}" as a schedule template.`;
+        this.loadTemplates();
       } catch (error) {
-        this.warningMessage = "Failed to save template. Please try again.";
+        if (error?.response?.status === 409) {
+          this.templateMessage =
+            error.response.data?.message ||
+            "This week is already saved as a template. Delete that template first if you want to save it again.";
+        } else {
+          this.warningMessage = "Failed to save template. Please try again.";
+        }
         console.log("error", error);
+      } finally {
+        this.isSavingTemplate = false;
+        this.templateName = "";
+        this.templateDescription = "";
       }
     },
     formatDateDay(isoDate) {
@@ -1804,10 +1840,6 @@ p {
   align-items: flex-start;
 }
 
-.template-save-modal {
-  max-width: 700px;
-}
-
 .confirm-modal {
   max-width: 520px;
 }
@@ -1823,45 +1855,6 @@ p {
   justify-content: flex-end;
   gap: 10px;
   margin-top: 20px;
-}
-
-.template-preview {
-  margin-top: 18px;
-  padding-top: 18px;
-  border-top: 1px solid #e7ebf3;
-}
-
-.template-preview h3 {
-  margin-bottom: 6px;
-  font-size: 16px;
-}
-
-.shifts-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 12px;
-  font-size: 13px;
-}
-
-.shifts-table thead {
-  background: #f5f7fb;
-}
-
-.shifts-table th {
-  padding: 10px 6px;
-  text-align: left;
-  font-weight: 600;
-  color: #223047;
-  border-bottom: 1px solid #e7ebf3;
-}
-
-.shifts-table td {
-  padding: 10px 6px;
-  border-bottom: 1px solid #f0f2f7;
-}
-
-.shifts-table tbody tr:hover {
-  background: #fbfcff;
 }
 
 .day-label {
@@ -1895,7 +1888,8 @@ p {
   width: 100%;
 }
 
-.primary-button:disabled {
+.primary-button:disabled,
+.ghost-button:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
