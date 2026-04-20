@@ -19,6 +19,7 @@ import EmployerTradeboard from "./views/EmployerTradeboard.vue";
 import AdminLogin from "./views/AdminLogin.vue";
 import AdminDashboard from "./views/AdminDashboard.vue";
 import EmployeeTimeClock from "./views/EmployeeTimeClock.vue";
+import EmployerTimecards from "./views/EmployerTimecards.vue";
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -70,6 +71,11 @@ const router = createRouter({
           path: "employees",
           name: "employerEmployees",
           component: EmployerEmployees,
+        },
+        {
+          path: "timecards",
+          name: "employerTimecards",
+          component: EmployerTimecards,
         },
         {
           path: "trades",
