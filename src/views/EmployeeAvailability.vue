@@ -10,17 +10,24 @@
       <span>{{ successMessage }}</span>
     </section>
 
+    <section v-if="classScheduleMessage" class="status-banner warning">
+      <v-icon size="18">mdi-alert-outline</v-icon>
+      <span>{{ classScheduleMessage }}</span>
+    </section>
+
     <section class="panel">
       <div class="panel-header">
         <div>
           <p class="eyebrow">Weekly Pattern</p>
-          <h2>Your Availability</h2>
-          <p class="muted">Click or drag to mark the times you are available to work each week.</p>
+          <h2>Your Unavailable Times</h2>
+          <p class="muted">Your classes are blocked automatically. Add anything else that keeps you from working.</p>
         </div>
-        <button class="primary-button" :disabled="saving || !availabilityChanged" @click="saveAvailability">
-          <v-icon size="18">mdi-content-save-outline</v-icon>
-          {{ saving ? "Saving..." : "Save Availability" }}
-        </button>
+        <div class="header-actions">
+          <button class="primary-button" :disabled="saving || !availabilityChanged" @click="saveAvailability">
+            <v-icon size="18">mdi-content-save-outline</v-icon>
+            {{ saving ? "Saving..." : "Save Availability" }}
+          </button>
+        </div>
       </div>
 
       <div v-if="loading" class="loading-card">
@@ -29,151 +36,92 @@
       </div>
 
       <div v-else class="availability-calendar">
-        <!-- Quick actions -->
         <div class="quick-actions">
-          <button class="ghost-button" @click="setAllHours">
-            <v-icon size="16">mdi-check-all</v-icon>Mark All Available
-          </button>
-          <button class="ghost-button" @click="clearAllHours">
-            <v-icon size="16">mdi-close-all</v-icon>Clear All
-          </button>
-          <button class="ghost-button" @click="setBusinessHours">
-            <v-icon size="16">mdi-briefcase</v-icon>Business Hours (9-5)
+          <button class="primary-button" @click="openUnavailableEditor()">
+            <v-icon size="16">mdi-calendar-remove-outline</v-icon>Add Unavailable Time
           </button>
         </div>
 
-        <!-- Calendar grid with draggable hours -->
-        <div class="calendar-grid">
-          <!-- Header with day names -->
-          <div class="calendar-header">
-            <div class="time-column-header"></div>
-            <div v-for="day in weekDays" :key="day.key" class="day-header">
-              <strong>{{ day.label }}</strong>
-              <span class="day-date">{{ day.shortDate }}</span>
-            </div>
-          </div>
-
-          <!-- Time slots body -->
-          <div class="calendar-body">
-            <!-- Time column (hours) -->
-            <div class="time-column">
-              <div v-for="hour in hours" :key="hour" class="time-slot-label">
-                {{ formatHour(hour) }}
-              </div>
-            </div>
-
-            <!-- Day columns (draggable) -->
-            <div 
-              v-for="(day, dayIndex) in weekDays" 
-              :key="day.key" 
-              class="day-column"
-              @mousedown.left="startDayDrag(dayIndex, $event)"
-              @mousemove="dragDaySelection(dayIndex, $event)"
-              @mouseup="endDayDrag"
-              @mouseleave="endDayDrag"
-            >
-              <div
-                v-for="hour in hours"
-                :key="`${day.key}-${hour}`"
-                :class="[
-                  'availability-slot',
-                  { available: isHourAvailable(dayIndex, hour) }
-                ]"
-                @mouseenter.left="dragDaySelection(dayIndex, $event)"
-                @click="openTimeEditor(dayIndex)"
-                :title="`Click to edit time for ${day.label}`"
-              >
-              </div>
-            </div>
-          </div>
+        <div class="calendar-shell">
+          <FullCalendar ref="availabilityCalendar" :options="calendarOptions" />
         </div>
 
-        <!-- Legend -->
         <div class="legend">
-          <div class="legend-item">
-            <div class="legend-box available"></div>
-            <span>Available (click to edit time)</span>
+          <div v-if="classSchedules.length" class="legend-item">
+            <div class="legend-box class-time"></div>
+            <span>Class time</span>
           </div>
           <div class="legend-item">
-            <div class="legend-box"></div>
-            <span>Not available</span>
+            <div class="legend-box unavailable"></div>
+            <span>Unavailable</span>
           </div>
+        </div>
+
+        <div v-if="unavailableBlocks.length" class="unavailable-list">
+          <article v-for="block in unavailableBlocks" :key="block.id" class="unavailable-row">
+            <div>
+              <strong>{{ dayLabelFor(block.dayKey) }} {{ block.startTime }} - {{ block.endTime }}</strong>
+              <p>{{ block.reason || "Unavailable" }}</p>
+            </div>
+            <div class="row-actions">
+              <button class="icon-inline" @click="openUnavailableEditor(block)" title="Edit unavailable time">
+                <v-icon size="18">mdi-pencil-outline</v-icon>
+              </button>
+              <button class="icon-inline danger-icon" @click="removeUnavailableBlock(block.id)" title="Remove unavailable time">
+                <v-icon size="18">mdi-delete-outline</v-icon>
+              </button>
+            </div>
+          </article>
         </div>
       </div>
     </section>
 
-    <!-- Time Editor Modal -->
-    <div v-if="showTimeEditor" class="overlay" @click.self="closeTimeEditor">
+    <div v-if="showUnavailableEditor" class="overlay" @click.self="closeUnavailableEditor">
       <section class="modal-editor">
         <header>
-          <h2>Edit Availability for {{ editingDay.label }}</h2>
-          <button class="icon-inline" @click="closeTimeEditor">
+          <h2>{{ unavailableDraft.id ? "Edit Unavailable Time" : "Add Unavailable Time" }}</h2>
+          <button class="icon-inline" @click="closeUnavailableEditor">
             <v-icon>mdi-close</v-icon>
           </button>
         </header>
 
         <div class="editor-content">
           <div class="form-group">
-            <label>Start Time</label>
-            <div class="time-picker">
-              <input 
-                v-model.number="editingTimes.startHour" 
-                type="number" 
-                min="7" 
-                max="21" 
-                placeholder="HH"
-                @change="validateTimes"
-              />
-              <span class="separator">:</span>
-              <input 
-                v-model.number="editingTimes.startMinute" 
-                type="number" 
-                min="0" 
-                max="59" 
-                placeholder="MM"
-                @change="validateTimes"
-              />
+            <label>Day</label>
+            <select v-model="unavailableDraft.dayKey">
+              <option v-for="day in weekDays" :key="day.key" :value="day.key">{{ day.label }}</option>
+            </select>
+          </div>
+
+          <div class="two-col">
+            <div class="form-group">
+              <label>Start Time</label>
+              <input v-model="unavailableDraft.startTime" type="time" min="07:00" max="21:00" />
+            </div>
+            <div class="form-group">
+              <label>End Time</label>
+              <input v-model="unavailableDraft.endTime" type="time" min="07:00" max="21:00" />
             </div>
           </div>
 
           <div class="form-group">
-            <label>End Time</label>
-            <div class="time-picker">
-              <input 
-                v-model.number="editingTimes.endHour" 
-                type="number" 
-                min="7" 
-                max="21" 
-                placeholder="HH"
-                @change="validateTimes"
-              />
-              <span class="separator">:</span>
-              <input 
-                v-model.number="editingTimes.endMinute" 
-                type="number" 
-                min="0" 
-                max="59" 
-                placeholder="MM"
-                @change="validateTimes"
-              />
-            </div>
-          </div>
-
-          <div class="time-display">
-            <strong>{{ formatTimeRange(editingTimes) }}</strong>
-          </div>
-
-          <div class="quick-time-buttons">
-            <button class="quick-btn" @click="setQuickTime('businessHours')">9 AM - 5 PM</button>
-            <button class="quick-btn" @click="setQuickTime('morning')">7 AM - 12 PM</button>
-            <button class="quick-btn" @click="setQuickTime('afternoon')">12 PM - 9 PM</button>
-            <button class="quick-btn danger" @click="clearDayAvailability">Clear Day</button>
+            <label>Reason</label>
+            <input v-model="unavailableDraft.reason" type="text" placeholder="Class project, tutoring, appointment" />
           </div>
         </div>
 
         <footer>
-          <button class="btn-cancel" @click="closeTimeEditor">Cancel</button>
-          <button class="btn-save" @click="saveTimeEdit">Save Time</button>
+          <button
+            v-if="unavailableDraft.id"
+            class="btn-danger footer-left"
+            @click="removeUnavailableBlock(unavailableDraft.id); closeUnavailableEditor();"
+          >
+            Delete
+          </button>
+          <button class="btn-cancel" @click="closeUnavailableEditor">Cancel</button>
+          <button class="btn-save" @click="saveUnavailableBlock">
+            {{ unavailableDraft.id ? "Update Time" : "Add Time" }}
+          </button>
         </footer>
       </section>
     </div>
@@ -202,7 +150,11 @@
 
 <script>
 import { defineComponent } from 'vue';
+import FullCalendar from '@fullcalendar/vue3';
+import timeGridPlugin from '@fullcalendar/timegrid';
+import interactionPlugin from '@fullcalendar/interaction';
 import EmployeeServices from "@/services/employeeServices";
+import SchoolServices from "@/services/schoolServices";
 
 const HOURS = [7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21]; // 7 AM to 9 PM
 const DAYS = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"];
@@ -210,19 +162,26 @@ const DAY_LABELS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Sat
 
 export default defineComponent({
   name: "EmployeeAvailability",
+  components: {
+    FullCalendar,
+  },
   data() {
     return {
       loading: true,
       saving: false,
       errorMessage: "",
       successMessage: "",
+      classScheduleMessage: "",
       availabilityTimes: {},
       savedTimesSnapshot: "{}",
+      unavailableBlocks: [],
+      savedUnavailableSnapshot: "[]",
       timeOffHistory: [],
       hours: HOURS,
       weekDays: DAYS.map((key, index) => ({
         key,
         label: DAY_LABELS[index],
+        date: new Date(2026, 3, 20 + index).toISOString().slice(0, 10),
         shortDate: new Date(2026, 3, 20 + index).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit' })
       })),
       isDragging: false,
@@ -237,6 +196,18 @@ export default defineComponent({
         endHour: 17,
         endMinute: 0,
       },
+      showClassSchedule: false,
+      classSchedules: [],
+      mergedAvailability: [],
+      loadingClasses: false,
+      showUnavailableEditor: false,
+      unavailableDraft: {
+        id: "",
+        dayKey: "mon",
+        startTime: "12:00",
+        endTime: "13:00",
+        reason: "",
+      },
     };
   },
   computed: {
@@ -244,11 +215,65 @@ export default defineComponent({
       return this.$store.getters.getLoginUserInfo || {};
     },
     availabilityChanged() {
-      return JSON.stringify(this.availabilityTimes) !== this.savedTimesSnapshot;
+      return JSON.stringify(this.unavailableBlocks) !== this.savedUnavailableSnapshot;
     },
     editingDay() {
       if (this.editingDayIndex < 0) return {};
       return this.weekDays[this.editingDayIndex];
+    },
+    calendarOptions() {
+      return {
+        plugins: [timeGridPlugin, interactionPlugin],
+        initialView: "timeGridWeek",
+        initialDate: this.weekDays[0].date,
+        firstDay: 1,
+        allDaySlot: false,
+        height: "auto",
+        slotMinTime: "07:00:00",
+        slotMaxTime: "22:00:00",
+        slotDuration: "00:30:00",
+        nowIndicator: false,
+        selectable: true,
+        selectMirror: true,
+        headerToolbar: false,
+        dayHeaderFormat: { weekday: "short", month: "numeric", day: "numeric" },
+        events: this.calendarEvents,
+        select: this.openUnavailableEditorFromSelect,
+        eventClick: this.handleCalendarEventClick,
+      };
+    },
+    calendarEvents() {
+      const classEvents = this.classSchedules.map((course, index) => {
+        const dayIndex = DAYS.indexOf(course.dayOfWeek);
+        if (dayIndex < 0) return null;
+
+        return {
+          id: `class-${index}`,
+          title: course.courseCode || course.courseName || "Class",
+          start: `${this.weekDays[dayIndex].date}T${course.startTime}`,
+          end: `${this.weekDays[dayIndex].date}T${course.endTime}`,
+          backgroundColor: "#1d4ed8",
+          borderColor: "#1e40af",
+          extendedProps: { type: "class" },
+        };
+      }).filter(Boolean);
+
+      const unavailableEvents = this.unavailableBlocks.map((block) => {
+        const dayIndex = DAYS.indexOf(block.dayKey);
+        if (dayIndex < 0) return null;
+
+        return {
+          id: block.id,
+          title: block.reason || "Unavailable",
+          start: `${this.weekDays[dayIndex].date}T${block.startTime}`,
+          end: `${this.weekDays[dayIndex].date}T${block.endTime}`,
+          backgroundColor: "#b4233c",
+          borderColor: "#8b1f2d",
+          extendedProps: { type: "unavailable", blockId: block.id },
+        };
+      }).filter(Boolean);
+
+      return [...classEvents, ...unavailableEvents];
     },
   },
   created() {
@@ -268,12 +293,36 @@ export default defineComponent({
       try {
         const { data } = await EmployeeServices.getEmployeeDashboard(this.currentUser.userId);
         this.availabilityTimes = this.parseAvailabilityData(data.availability || []);
+        this.unavailableBlocks = this.parseUnavailableBlocks(data.unavailableBlocks || []);
         this.savedTimesSnapshot = JSON.stringify(this.availabilityTimes);
+        this.savedUnavailableSnapshot = JSON.stringify(this.unavailableBlocks);
         this.timeOffHistory = data.timeOffHistory || [];
+
+        // Load class schedules if available
+        await this.loadClassSchedules();
       } catch (error) {
         this.errorMessage = error.response?.data?.message || "We could not load employee availability.";
       } finally {
         this.loading = false;
+      }
+    },
+    async loadClassSchedules() {
+      try {
+        this.loadingClasses = true;
+        const { data } = await SchoolServices.getMergedAvailability(this.currentUser.userId);
+        this.mergedAvailability = data.mergedAvailability || [];
+        this.classSchedules = data.classSchedules || data.classSchedule || [];
+        this.classScheduleMessage = data.classScheduleError
+          ? `Class schedule was not loaded: ${data.classScheduleError}`
+          : "";
+      } catch (error) {
+        // Class schedules are optional, don't show error if they fail to load
+        console.warn("Could not load class schedules:", error);
+        this.classSchedules = [];
+        this.mergedAvailability = [];
+        this.classScheduleMessage = "Class schedule was not loaded. Check the school API lookup settings.";
+      } finally {
+        this.loadingClasses = false;
       }
     },
     parseAvailabilityData(data) {
@@ -295,6 +344,29 @@ export default defineComponent({
       }
 
       return times;
+    },
+    parseUnavailableBlocks(data) {
+      return (Array.isArray(data) ? data : [])
+        .filter(block => block.dayKey && block.startTime && block.endTime)
+        .map((block, index) => ({
+          id: block.id || `unavailable-${Date.now()}-${index}`,
+          dayKey: String(block.dayKey).toLowerCase(),
+          label: block.label || this.dayLabelFor(block.dayKey),
+          startTime: String(block.startTime).slice(0, 5),
+          endTime: String(block.endTime).slice(0, 5),
+          reason: block.reason || "Unavailable",
+        }));
+    },
+    timeFromParts(hour, minute) {
+      return `${String(hour).padStart(2, "0")}:${String(minute || 0).padStart(2, "0")}`;
+    },
+    dayLabelFor(dayKey) {
+      const index = DAYS.indexOf(String(dayKey || "").toLowerCase());
+      return index >= 0 ? DAY_LABELS[index] : "";
+    },
+    dayKeyFromDate(dateValue) {
+      const isoDate = String(dateValue || "").slice(0, 10);
+      return this.weekDays.find(day => day.date === isoDate)?.key || "mon";
     },
     formatHour(hour) {
       const ampm = hour >= 12 ? "PM" : "AM";
@@ -326,8 +398,37 @@ export default defineComponent({
 
       return true;
     },
+    hasClassAtTime(dayIndex, hour) {
+      if (!this.classSchedules.length) return false;
+      
+      const dayKey = DAYS[dayIndex];
+      const dayClasses = this.classSchedules.filter(cls => cls.dayOfWeek === dayKey);
+      
+      return dayClasses.some(cls => {
+        const startHour = parseInt(cls.startTime.split(':')[0]);
+        const endHour = parseInt(cls.endTime.split(':')[0]);
+        return hour >= startHour && hour < endHour;
+      });
+    },
+    hasConflictAtTime(dayIndex, hour) {
+      return this.isHourAvailable(dayIndex, hour) && this.hasClassAtTime(dayIndex, hour);
+    },
+    getClassTooltip(dayIndex, hour) {
+      const dayKey = DAYS[dayIndex];
+      const dayClasses = this.classSchedules.filter(cls => cls.dayOfWeek === dayKey);
+      const classesAtTime = dayClasses.filter(cls => {
+        const startHour = parseInt(cls.startTime.split(':')[0]);
+        const endHour = parseInt(cls.endTime.split(':')[0]);
+        return hour >= startHour && hour < endHour;
+      });
+      
+      if (classesAtTime.length === 0) return 'No classes scheduled';
+      
+      const classNames = classesAtTime.map(cls => `${cls.courseName} (${cls.startTime}-${cls.endTime})`).join(', ');
+      return `Classes: ${classNames}`;
+    },
     startDayDrag(dayIndex, event) {
-      if (event.button !== 0) return; // Only left click
+      if (event.button !== 0 || this.showClassSchedule) return; // Only left click and only when not showing class schedule
       this.isDragging = true;
       this.dragDayIndex = dayIndex;
       this.setDragStart(dayIndex, event);
@@ -389,6 +490,65 @@ export default defineComponent({
     closeTimeEditor() {
       this.showTimeEditor = false;
       this.editingDayIndex = -1;
+    },
+    openUnavailableEditor(defaults = {}) {
+      this.unavailableDraft = {
+        id: defaults.id || "",
+        dayKey: defaults.dayKey || "mon",
+        startTime: defaults.startTime || "12:00",
+        endTime: defaults.endTime || "13:00",
+        reason: defaults.reason || "",
+      };
+      this.showUnavailableEditor = true;
+    },
+    openUnavailableEditorFromSelect(selection) {
+      this.openUnavailableEditor({
+        dayKey: this.dayKeyFromDate(selection.startStr),
+        startTime: selection.startStr.slice(11, 16) || "12:00",
+        endTime: selection.endStr.slice(11, 16) || "13:00",
+      });
+      selection.view.calendar.unselect();
+    },
+    closeUnavailableEditor() {
+      this.showUnavailableEditor = false;
+    },
+    saveUnavailableBlock() {
+      if (!this.unavailableDraft.dayKey || !this.unavailableDraft.startTime || !this.unavailableDraft.endTime) {
+        this.errorMessage = "Choose a day, start time, and end time.";
+        return;
+      }
+
+      if (this.unavailableDraft.startTime >= this.unavailableDraft.endTime) {
+        this.errorMessage = "Unavailable time must end after it starts.";
+        return;
+      }
+
+      const savedBlock = {
+        id: this.unavailableDraft.id || `unavailable-${Date.now()}`,
+        dayKey: this.unavailableDraft.dayKey,
+        label: this.dayLabelFor(this.unavailableDraft.dayKey),
+        startTime: this.unavailableDraft.startTime,
+        endTime: this.unavailableDraft.endTime,
+        reason: this.unavailableDraft.reason.trim() || "Unavailable",
+      };
+
+      this.unavailableBlocks = this.unavailableDraft.id
+        ? this.unavailableBlocks.map(block => block.id === savedBlock.id ? savedBlock : block)
+        : [...this.unavailableBlocks, savedBlock];
+      this.errorMessage = "";
+      this.closeUnavailableEditor();
+    },
+    removeUnavailableBlock(id) {
+      this.unavailableBlocks = this.unavailableBlocks.filter(block => block.id !== id);
+    },
+    handleCalendarEventClick(clickInfo) {
+      const eventType = clickInfo.event.extendedProps.type;
+      if (eventType === "unavailable") {
+        const block = this.unavailableBlocks.find(item => item.id === clickInfo.event.extendedProps.blockId);
+        if (block) {
+          this.openUnavailableEditor(block);
+        }
+      }
     },
     validateTimes() {
       this.editingTimes.startMinute = Math.max(0, Math.min(59, this.editingTimes.startMinute || 0));
@@ -459,8 +619,9 @@ export default defineComponent({
 
       try {
         const availabilityData = this.convertTimesToApiFormat();
-        await EmployeeServices.updateEmployeeAvailability(this.currentUser.userId, availabilityData);
+        await EmployeeServices.updateEmployeeAvailability(this.currentUser.userId, availabilityData, this.unavailableBlocks);
         this.savedTimesSnapshot = JSON.stringify(this.availabilityTimes);
+        this.savedUnavailableSnapshot = JSON.stringify(this.unavailableBlocks);
         this.successMessage = "Your availability has been saved successfully!";
         
         setTimeout(() => {
@@ -542,12 +703,131 @@ export default defineComponent({
   color: #195f40;
 }
 
+.status-banner.warning {
+  background: #fff8eb;
+  color: #8a4f00;
+  border-color: #efd196;
+}
+
 .panel-header {
   display: flex;
   justify-content: space-between;
   gap: 16px;
   align-items: flex-start;
   margin-bottom: 18px;
+}
+
+.panel-header.compact {
+  margin-bottom: 12px;
+}
+
+.header-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: flex-end;
+}
+
+.toggle-group {
+  display: flex;
+  border: 1px solid #dce1ec;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.toggle-btn {
+  padding: 8px 16px;
+  border: none;
+  background: #fff;
+  color: #666;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.toggle-btn.active {
+  background: #2647c8;
+  color: #fff;
+}
+
+.toggle-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.toggle-btn .v-icon {
+  margin-right: 4px;
+}
+
+.availability-slot {
+  height: 32px;
+  border: 1px solid #e8ecf2;
+  background: #fff;
+  transition: background-color 0.2s ease;
+  cursor: pointer;
+}
+
+.availability-slot.available {
+  background: #effcf4;
+  border-color: #195f40;
+}
+
+.availability-slot.class-time {
+  background: #eff6ff;
+  border-color: #1d4ed8;
+}
+
+.availability-slot.conflict {
+  background: #fef3c7;
+  border-color: #d97706;
+}
+
+.availability-slot:hover:not(.class-time):not(.conflict) {
+  background: #f8fafc;
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid #e8ecf2;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: #666;
+}
+
+.legend-box {
+  width: 16px;
+  height: 16px;
+  border: 1px solid #e8ecf2;
+  background: #fff;
+}
+
+.legend-box.available {
+  background: #effcf4;
+  border-color: #195f40;
+}
+
+.legend-box.class-time {
+  background: #eff6ff;
+  border-color: #1d4ed8;
+}
+
+.legend-box.conflict {
+  background: #fef3c7;
+  border-color: #d97706;
+}
+
+.legend-box.unavailable {
+  background: #ffe9ee;
+  border-color: #b4233c;
 }
 
 .panel-header.compact {
@@ -611,6 +891,33 @@ p {
   display: flex;
   flex-direction: column;
   gap: 16px;
+}
+
+.calendar-shell {
+  border: 1px solid #dce1ec;
+  border-radius: 8px;
+  background: #fff;
+  padding: 10px;
+  overflow-x: auto;
+}
+
+.calendar-shell :deep(.fc) {
+  min-width: 760px;
+  font-family: inherit;
+}
+
+.calendar-shell :deep(.fc-col-header-cell) {
+  background: #f5f7fb;
+  color: #223047;
+  padding: 10px 6px;
+}
+
+.calendar-shell :deep(.fc-event) {
+  border-radius: 6px;
+  padding: 4px 6px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
 }
 
 .quick-actions {
@@ -923,6 +1230,55 @@ p {
   font-size: 14px;
 }
 
+.form-group input,
+.form-group select {
+  width: 100%;
+  border: 2px solid #dce1ec;
+  background: #f9fbff;
+  border-radius: 8px;
+  padding: 10px 12px;
+  font: inherit;
+  outline: none;
+}
+
+.two-col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.unavailable-list {
+  display: grid;
+  gap: 8px;
+}
+
+.unavailable-row {
+  border: 1px solid #f0b4c0;
+  border-radius: 8px;
+  background: #fff6f8;
+  padding: 10px 12px;
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+}
+
+.row-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.danger-icon {
+  color: #b4233c;
+  border-color: #f0b4c0;
+}
+
+.unavailable-row p {
+  color: #617089;
+  font-size: 13px;
+  margin-top: 4px;
+}
+
 .time-picker {
   display: flex;
   align-items: center;
@@ -1003,8 +1359,13 @@ p {
   justify-content: flex-end;
 }
 
+.footer-left {
+  margin-right: auto;
+}
+
 .btn-cancel,
-.btn-save {
+.btn-save,
+.btn-danger {
   padding: 12px 24px;
   border-radius: 8px;
   font-weight: 600;
@@ -1012,6 +1373,12 @@ p {
   cursor: pointer;
   transition: all 0.2s;
   border: none;
+}
+
+.btn-danger {
+  background: #fff1f3;
+  color: #b4233c;
+  border: 1px solid #f0b4c0;
 }
 
 .btn-cancel {
@@ -1075,6 +1442,10 @@ p {
   }
 
   .quick-time-buttons {
+    grid-template-columns: 1fr;
+  }
+
+  .two-col {
     grid-template-columns: 1fr;
   }
 

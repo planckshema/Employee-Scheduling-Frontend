@@ -290,6 +290,7 @@ import interactionPlugin from '@fullcalendar/interaction'
 import EmployerServices from "@/services/employerServices";
 import SchedulerServices from "@/services/schedulerServices";
 import TemplateServices from "@/services/templateServices";
+import SchoolServices from "@/services/schoolServices";
 
 const dayKeys = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
 const POSITION_LIBRARY = [
@@ -458,6 +459,8 @@ export default defineComponent({
       currentWeekStart: monday,
       employees: [],
       employeeAvailabilityIndex: {},
+      employeeClassSchedulesIndex: {},
+      employeeUnavailableBlocksIndex: {},
       employerProfile: null,
       taskLists: [],
       templates: [],
@@ -637,8 +640,8 @@ export default defineComponent({
   },
   methods: {
     async bootstrapPage() {
+      await this.fetchEmployees();
       await Promise.all([
-        this.fetchEmployees(),
         this.fetchEmployeeAvailabilityIndex(),
         this.fetchEmployerProfile(),
         this.fetchTaskLists(),
@@ -650,7 +653,11 @@ export default defineComponent({
         id: row.EmployeeID,
         name: `${row.firstName} ${row.lastName}`.trim(),
         email: row.email,
+        studentId: row.studentId || "",
       };
+    },
+    getSchoolLookupId(employee) {
+      return employee?.studentId || String(employee?.email || "").split("@")[0] || "";
     },
     parseSelectedEmployeeId(id) {
       if (id === null || id === undefined || id === "") {
@@ -677,8 +684,36 @@ export default defineComponent({
         this.employeeAvailabilityIndex = Object.fromEntries(
           (response.data || []).map((row) => [row.EmployeeID, normalizeAvailability(row.availability)]),
         );
+        this.employeeUnavailableBlocksIndex = Object.fromEntries(
+          (response.data || []).map((row) => [row.EmployeeID, row.unavailableBlocks || []]),
+        );
+
+        // Also fetch class schedules for employees
+        await this.fetchEmployeeClassSchedules();
       } catch (error) {
         console.log("error", error);
+      }
+    },
+    async fetchEmployeeClassSchedules() {
+      try {
+        // Fetch class schedules for all employees that have student IDs
+        const classSchedulePromises = this.employees
+          .filter(emp => this.getSchoolLookupId(emp))
+          .map(async (emp) => {
+            try {
+              const response = await SchoolServices.getClassSchedule(this.getSchoolLookupId(emp));
+              return [emp.id, response.data.classes || []];
+            } catch (error) {
+              console.warn(`Could not fetch class schedule for employee ${emp.id}:`, error);
+              return [emp.id, []];
+            }
+          });
+
+        const classSchedules = await Promise.all(classSchedulePromises);
+        this.employeeClassSchedulesIndex = Object.fromEntries(classSchedules);
+      } catch (error) {
+        console.warn("Error fetching employee class schedules:", error);
+        this.employeeClassSchedulesIndex = {};
       }
     },
     async fetchEmployerProfile() {
@@ -791,22 +826,72 @@ export default defineComponent({
         return "";
       }
 
-      const availability = this.getAvailabilityEntry(employeeId, shift.date);
-      if (!availability) {
+      const unavailableConflict = this.getUnavailableBlockConflictText(shift);
+      if (unavailableConflict) {
+        return unavailableConflict;
+      }
+
+      // Check for class schedule conflicts
+      const classConflict = this.getClassScheduleConflictText(shift);
+      if (classConflict) {
+        return classConflict;
+      }
+
+      return "";
+    },
+    getUnavailableBlockConflictText(shift) {
+      const employeeId = this.parseSelectedEmployeeId(shift.EmployeeID);
+      if (!employeeId) {
         return "";
       }
 
-      if (!availability.available) {
-        return "This employee is marked unavailable for that day.";
+      const shiftDate = parseIsoDate(shift.date);
+      if (!shiftDate) {
+        return "";
       }
+
+      const dayKey = dayKeys[shiftDate.getDay()];
+      const blocks = (this.employeeUnavailableBlocksIndex[employeeId] || [])
+        .filter(block => block.dayKey === dayKey);
+      const shiftStart = toMinutes(shift.startTime);
+      const shiftEnd = toMinutes(shift.endTime);
+
+      for (const block of blocks) {
+        const blockStart = toMinutes(block.startTime);
+        const blockEnd = toMinutes(block.endTime);
+        if (shiftStart < blockEnd && shiftEnd > blockStart) {
+          return `This shift overlaps unavailable time (${block.startTime} - ${block.endTime}).`;
+        }
+      }
+
+      return "";
+    },
+    getClassScheduleConflictText(shift) {
+      const employeeId = this.parseSelectedEmployeeId(shift.EmployeeID);
+      if (!employeeId) {
+        return "";
+      }
+
+      const classSchedules = this.employeeClassSchedulesIndex[employeeId] || [];
+      const shiftDate = parseIsoDate(shift.date);
+      if (!shiftDate) {
+        return "";
+      }
+
+      const dayKey = dayKeys[shiftDate.getDay()];
+      const dayClasses = classSchedules.filter(cls => cls.dayOfWeek === dayKey);
 
       const shiftStart = toMinutes(shift.startTime);
       const shiftEnd = toMinutes(shift.endTime);
-      const availabilityStart = toMinutes(availability.startTime);
-      const availabilityEnd = toMinutes(availability.endTime);
 
-      if (shiftStart < availabilityStart || shiftEnd > availabilityEnd) {
-        return `This shift is outside the employee's available hours (${availability.startTime} - ${availability.endTime}).`;
+      for (const cls of dayClasses) {
+        const classStart = toMinutes(cls.startTime);
+        const classEnd = toMinutes(cls.endTime);
+
+        // Check if shift overlaps with class
+        if (shiftStart < classEnd && shiftEnd > classStart) {
+          return `This shift conflicts with ${cls.courseName} (${cls.startTime} - ${cls.endTime}).`;
+        }
       }
 
       return "";
