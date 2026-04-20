@@ -30,6 +30,22 @@ export default {
     return apiClient.get(`/employee/dashboard/users/${userId}`);
   },
 
+  getTodayShift(userId) {
+    return apiClient.get(`/employee/timeclock/users/${userId}/shift/today`);
+  },
+
+  getTimeClockStatus(userId, shiftId) {
+    return apiClient.get(`/employee/timeclock/users/${userId}/shifts/${shiftId}`);
+  },
+
+  clockIn(userId, shiftId) {
+    return apiClient.post(`/employee/timeclock/users/${userId}/shifts/${shiftId}/clock-in`);
+  },
+
+  clockOut(userId, shiftId) {
+    return apiClient.post(`/employee/timeclock/users/${userId}/shifts/${shiftId}/clock-out`);
+  },
+
   updateEmployeeAvailability(userId, weeklyAvailability) {
     return apiClient.put(`/employee/dashboard/users/${userId}/availability`, {
       weeklyAvailability,

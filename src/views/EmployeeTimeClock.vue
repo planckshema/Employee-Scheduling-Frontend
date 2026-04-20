@@ -32,19 +32,25 @@
           <button
             v-if="canClockIn"
             class="primary-button"
+            :disabled="submitting"
             @click="handleClockIn"
           >
-            Clock In
+            {{ submitting ? "Clocking In..." : "Clock In" }}
           </button>
 
           <button
             v-if="canClockOut"
             class="ghost-button"
+            :disabled="submitting"
             @click="handleClockOut"
           >
-            Clock Out
+            {{ submitting ? "Clocking Out..." : "Clock Out" }}
           </button>
         </div>
+
+        <p v-if="isShiftComplete" class="status-copy">
+          This shift has already been clocked out.
+        </p>
       </div>
     </section>
   </section>
@@ -58,6 +64,7 @@ export default {
   data() {
     return {
       loading: true,
+      submitting: false,
       errorMessage: "",
       shift: null,
       timeClock: {
@@ -75,6 +82,9 @@ export default {
     },
     canClockOut() {
       return this.shift && this.timeClock.clockInTime && !this.timeClock.clockOutTime;
+    },
+    isShiftComplete() {
+      return this.shift && this.timeClock.clockInTime && this.timeClock.clockOutTime;
     },
   },
   created() {
@@ -100,7 +110,15 @@ export default {
             this.currentUser.userId,
             this.shift.shiftId
           );
-          this.timeClock = status;
+          this.timeClock = {
+            clockInTime: status?.clockInTime || null,
+            clockOutTime: status?.clockOutTime || null,
+          };
+        } else {
+          this.timeClock = {
+            clockInTime: null,
+            clockOutTime: null,
+          };
         }
       } catch (error) {
         this.errorMessage =
@@ -110,21 +128,39 @@ export default {
       }
     },
     async handleClockIn() {
+      if (!this.shift?.shiftId || this.submitting) {
+        return;
+      }
+
+      this.submitting = true;
+      this.errorMessage = "";
+
       try {
         await EmployeeServices.clockIn(this.currentUser.userId, this.shift.shiftId);
         await this.loadTimeClock();
       } catch (error) {
         this.errorMessage =
           error.response?.data?.message || "Clock in failed.";
+      } finally {
+        this.submitting = false;
       }
     },
     async handleClockOut() {
+      if (!this.shift?.shiftId || this.submitting) {
+        return;
+      }
+
+      this.submitting = true;
+      this.errorMessage = "";
+
       try {
         await EmployeeServices.clockOut(this.currentUser.userId, this.shift.shiftId);
         await this.loadTimeClock();
       } catch (error) {
         this.errorMessage =
           error.response?.data?.message || "Clock out failed.";
+      } finally {
+        this.submitting = false;
       }
     },
     formatDateTime(value) {
@@ -175,5 +211,16 @@ export default {
   padding: 11px 16px;
   border-radius: 12px;
   font-weight: 700;
+}
+
+.primary-button:disabled,
+.ghost-button:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.status-copy {
+  margin-top: 14px;
+  color: #617089;
 }
 </style>
