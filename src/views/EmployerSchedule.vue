@@ -143,18 +143,18 @@
         </header>
 
         <div class="template-actions">
-          <button type="button" class="primary-button" @click="generateSuggestedWeek">
-            <v-icon size="18">mdi-auto-fix</v-icon>
-            Generate Suggested Week
-          </button>
           <button type="button" class="ghost-button" @click="saveCurrentWeekAsTemplate">
             <v-icon size="18">mdi-content-save-outline</v-icon>
             Save Current Week
           </button>
         </div>
 
+        <p v-if="templateMessage" class="template-message">
+          {{ templateMessage }}
+        </p>
+
         <p class="muted modal-copy">
-          Generated suggestions use employee availability, your business hours, and your business type to prefill a workable draft.
+          Save this week's shifts as a reusable schedule template. Each week can be saved once.
         </p>
 
         <div v-if="templates.length" class="template-list">
@@ -479,6 +479,7 @@ export default defineComponent({
       templateSaveDialog: false,
       templateName: "",
       templateDescription: "",
+      templateMessage: "",
       confirmDialog: false,
       confirmDialogTitle: "",
       confirmDialogMessage: "",
@@ -746,6 +747,7 @@ export default defineComponent({
     },
     async openTemplateDialog() {
       this.templateDialog = true;
+      this.templateMessage = "";
       await this.loadTemplates();
     },
     async loadTemplates() {
@@ -1019,14 +1021,37 @@ export default defineComponent({
         console.log("error", error);
       }
     },
+    currentWeekTemplateKey() {
+      return `Saved from week of ${this.weekLabel}`;
+    },
+    findTemplateForCurrentWeek() {
+      const weekKey = this.currentWeekTemplateKey().toLowerCase();
+      const weekName = `week of ${this.weekLabel}`.toLowerCase();
+
+      return this.templates.find((template) => {
+        const name = String(template.name || "").trim().toLowerCase();
+        const description = String(template.description || "").trim().toLowerCase();
+        return description === weekKey || name === weekName || name.includes(weekName);
+      }) || null;
+    },
     async saveCurrentWeekAsTemplate() {
+      this.templateMessage = "";
+      await this.loadTemplates();
+
       if (!this.shiftsForCurrentWeek.length) {
-        this.warningMessage = "There are no shifts in the current week to save as a template.";
+        this.templateMessage = "There are no shifts in the current week to save as a template.";
+        return;
+      }
+
+      const existingTemplate = this.findTemplateForCurrentWeek();
+      if (existingTemplate) {
+        this.templateMessage =
+          `This week is already saved as "${existingTemplate.name}". Delete that template first if you want to save it again.`;
         return;
       }
 
       this.templateName = `Week of ${this.weekLabel}`;
-      this.templateDescription = "";
+      this.templateDescription = this.currentWeekTemplateKey();
       this.templateSaveDialog = true;
     },
     closeTemplateSaveDialog() {
@@ -1035,6 +1060,15 @@ export default defineComponent({
       this.templateDescription = "";
     },
     async confirmTemplateSave() {
+      await this.loadTemplates();
+      const existingTemplate = this.findTemplateForCurrentWeek();
+      if (existingTemplate) {
+        this.templateMessage =
+          `This week is already saved as "${existingTemplate.name}". Delete that template first if you want to save it again.`;
+        this.closeTemplateSaveDialog();
+        return;
+      }
+
       const shifts = this.shiftsForCurrentWeek.map((shift) => {
         const shiftDate = parseIsoDate(shift.date);
         return {
@@ -1049,10 +1083,11 @@ export default defineComponent({
       try {
         await TemplateServices.createTemplate({
           name: this.templateName,
-          description: this.templateDescription || `Saved from week of ${this.weekLabel}`,
+          description: this.templateDescription || this.currentWeekTemplateKey(),
           shifts,
         });
         this.successMessage = "Template saved successfully.";
+        this.templateMessage = "";
         this.closeTemplateSaveDialog();
         await this.loadTemplates();
       } catch (error) {
@@ -1197,6 +1232,7 @@ export default defineComponent({
       try {
         await TemplateServices.deleteTemplate(id);
         await this.loadTemplates();
+        this.templateMessage = "";
       } catch (error) {
         console.log("error", error);
       }
@@ -1725,6 +1761,16 @@ p {
 .modal-copy {
   margin-top: 12px;
   margin-bottom: 16px;
+}
+
+.template-message {
+  margin-top: 12px;
+  padding: 12px 14px;
+  border: 1px solid #efd196;
+  border-radius: 8px;
+  background: #fff8eb;
+  color: #8a4f00;
+  font-weight: 700;
 }
 
 .template-actions {
