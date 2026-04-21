@@ -125,9 +125,7 @@ const getLocalIsoDate = (dateValue = new Date()) => {
 };
 
 const toMinutes = (timeValue) => {
-  const [hours, minutes] = String(timeValue || "00:00")
-    .split(":")
-    .map(Number);
+  const [hours, minutes] = String(timeValue || "00:00").split(":").map(Number);
   return (hours || 0) * 60 + (minutes || 0);
 };
 
@@ -206,24 +204,22 @@ const normalizeTimeClock = (payload) => {
   const source = payload?.timeClock || payload?.status || payload?.record || payload || {};
 
   return {
-    clockInTime:
-      firstDefined(
-        source.clockInTime,
-        source.ClockInTime,
-        source.clockIn,
-        source.clockInAt,
-        source.clockedInAt,
-        source.timeIn,
-      ) || null,
-    clockOutTime:
-      firstDefined(
-        source.clockOutTime,
-        source.ClockOutTime,
-        source.clockOut,
-        source.clockOutAt,
-        source.clockedOutAt,
-        source.timeOut,
-      ) || null,
+    clockInTime: firstDefined(
+      source.clockInTime,
+      source.ClockInTime,
+      source.clockIn,
+      source.clockInAt,
+      source.clockedInAt,
+      source.timeIn,
+    ) || null,
+    clockOutTime: firstDefined(
+      source.clockOutTime,
+      source.ClockOutTime,
+      source.clockOut,
+      source.clockOutAt,
+      source.clockedOutAt,
+      source.timeOut,
+    ) || null,
   };
 };
 
@@ -273,11 +269,7 @@ export default {
       return Boolean(this.shift?.shiftId) && this.isCurrentlyClockedIn;
     },
     isShiftComplete() {
-      return (
-        Boolean(this.shift?.shiftId) &&
-        Boolean(this.latestClockOutMs) &&
-        this.latestClockOutMs >= this.latestClockInMs
-      );
+      return Boolean(this.shift?.shiftId) && Boolean(this.latestClockOutMs) && this.latestClockOutMs >= this.latestClockInMs;
     },
   },
   created() {
@@ -286,6 +278,7 @@ export default {
   methods: {
     async resolveTodayShift() {
       let recoverableError = null;
+      let dashboard = null;
       let employeeId = null;
 
       try {
@@ -302,14 +295,15 @@ export default {
 
       try {
         const { data } = await EmployeeServices.getEmployeeDashboard(this.currentUser.userId);
+        dashboard = data || null;
         employeeId = firstDefined(
-          data?.profile?.employeeId,
-          data?.profile?.EmployeeID,
-          data?.profile?.employeeID,
+          dashboard?.profile?.employeeId,
+          dashboard?.profile?.EmployeeID,
+          dashboard?.profile?.employeeID,
           null,
         );
 
-        const dashboardShift = pickBestTodayShift(extractDashboardShifts(data));
+        const dashboardShift = pickBestTodayShift(extractDashboardShifts(dashboard));
         if (dashboardShift) {
           return dashboardShift;
         }
@@ -377,7 +371,9 @@ export default {
           this.shift.shiftId,
         );
         const normalizedStatus = normalizeTimeClock(statusPayload);
-        this.timeClock = merge ? mergeTimeClock(this.timeClock, normalizedStatus) : normalizedStatus;
+        this.timeClock = merge
+          ? mergeTimeClock(this.timeClock, normalizedStatus)
+          : normalizedStatus;
       } catch (error) {
         if (error.response?.status === 404) {
           if (!merge) {
@@ -489,6 +485,7 @@ export default {
 <style scoped>
 .tab-content {
   --clock-surface: #ffffff;
+  --clock-surface-soft: #f4fbf6;
   --clock-text: #1d2b23;
   --clock-text-soft: #55685d;
   --clock-primary: #0b6e4f;
@@ -509,36 +506,36 @@ export default {
   border-radius: 22px;
   background: linear-gradient(180deg, #ffffff 0%, #f4fbf6 100%);
   padding: 24px;
-  box-shadow: var(--clock-shadow);
+  box-shadow: var(--app-shadow-sm, var(--clock-shadow));
 }
 
 .status-banner.error {
   background: linear-gradient(180deg, #fff8f8 0%, #fff1f1 100%);
-  color: var(--clock-danger);
-  border-color: var(--clock-danger-border);
+  color: var(--app-danger, var(--clock-danger));
+  border-color: var(--app-danger-border, var(--clock-danger-border));
 }
 
 .status-banner.success {
   background: linear-gradient(180deg, #f4fff7 0%, #ebf9f0 100%);
-  color: var(--clock-primary);
-  border-color: var(--clock-success-border);
+  color: var(--app-primary, var(--clock-primary));
+  border-color: var(--app-success-border, var(--clock-success-border));
 }
 
 .clock-card h2 {
   margin: 0 0 18px;
-  color: var(--clock-text);
+  color: var(--app-text, var(--clock-text));
   font-size: 22px;
   letter-spacing: -0.02em;
 }
 
 .clock-card p {
   margin: 0 0 8px;
-  color: var(--clock-text);
+  color: var(--app-text, var(--clock-text));
   line-height: 1.55;
 }
 
 .clock-card strong {
-  color: var(--clock-primary-deep);
+  color: var(--app-primary-deep, var(--clock-primary-deep));
 }
 
 .actions {
@@ -579,17 +576,31 @@ export default {
   outline-offset: 3px;
 }
 
+.ghost-button {
+  border: 1px solid var(--app-border);
+  background: var(--app-surface, var(--clock-surface));
+  padding: 11px 16px;
+  border-radius: 14px;
+  font-weight: 700;
+  color: var(--app-text, var(--clock-text));
+}
+
+.primary-button:disabled,
+.ghost-button:disabled {
+  opacity: 1;
+  cursor: not-allowed;
+}
+
 .primary-button:disabled {
   background: linear-gradient(135deg, #5f7f74 0%, #729f88 100%);
   border-color: #5a8073;
   color: rgba(248, 255, 248, 0.94);
   box-shadow: none;
   text-shadow: none;
-  cursor: not-allowed;
 }
 
 .status-copy {
   margin-top: 16px;
-  color: var(--clock-text-soft);
+  color: var(--app-text-soft, var(--clock-text-soft));
 }
 </style>

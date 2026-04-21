@@ -92,11 +92,20 @@
               </div>
 
               <div v-if="getShiftsForSlot(day.isoDate, slot).length" class="shift-stack">
-                <article v-for="shift in getShiftsForSlot(day.isoDate, slot)" :key="shift.shiftId" :class="[
-                  'shift-card',
-                  { unassigned: !shift.employeeName, flagged: hasAvailabilityConflict(shift) },
-                ]" @click="openEditShiftDialog(shift)">
-                  <button class="shift-delete" title="Delete shift" @click.stop="deleteShift(shift.shiftId)">
+                <article
+                  v-for="shift in getShiftsForSlot(day.isoDate, slot)"
+                  :key="shift.shiftId"
+                  :class="[
+                    'shift-card',
+                    { unassigned: !shift.EmployeeID, flagged: hasAvailabilityConflict(shift) },
+                  ]"
+                  @click="openEditShiftDialog(shift)"
+                >
+                  <button
+                    class="shift-delete"
+                    title="Delete shift"
+                    @click.stop="deleteShift(shift.shiftId)"
+                  >
                     <v-icon size="14">mdi-close</v-icon>
                   </button>
 
@@ -105,8 +114,8 @@
                     <span>{{ shift.startTime }} - {{ shift.endTime }}</span>
                   </div>
 
-                  <p :class="['shift-assignee', { missing: !shift.employeeName }]">
-                    {{ shift.employeeName || "Unassigned employee" }}
+                  <p :class="['shift-assignee', { missing: !shift.EmployeeID }]">
+                    {{ shift.EmployeeID ? shift.employeeName : "Unassigned employee" }}
                   </p>
 
                   <p v-if="hasAvailabilityConflict(shift)" class="shift-flag">
@@ -585,7 +594,7 @@ export default defineComponent({
       ).sort((a, b) => toMinutes(a.startTime) - toMinutes(b.startTime));
     },
     unassignedShiftCount() {
-      return this.shiftsForCurrentWeek.filter((shift) => !shift.employeeName).length;
+      return this.shiftsForCurrentWeek.filter((shift) => !shift.EmployeeID).length;
     },
     availabilityConflictCount() {
       return this.shiftsForCurrentWeek.filter((shift) => this.hasAvailabilityConflict(shift)).length;
