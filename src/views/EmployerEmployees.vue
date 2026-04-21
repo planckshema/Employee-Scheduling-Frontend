@@ -162,29 +162,36 @@ export default {
       this.addEmployeeDialog = false;
       this.newEmployee = { name: "", email: "", phone: "", role: "" };
     },
-    saveEmployee() {
-      if (!this.newEmployee.name.trim() || !this.newEmployee.email.trim()) {
-        return;
-      }
+   saveEmployee() {
+  if (!this.newEmployee.name.trim() || !this.newEmployee.email.trim()) {
+    return;
+  }
 
-      const nameParts = this.newEmployee.name.trim().split(/\s+/);
-      const firstName = nameParts.shift() || "";
-      const lastName = nameParts.join(" ") || "Employee";
+  // 1. Get the current employer's user ID from your store
+  const currentUserId = this.$store.getters.getLoginUserInfo?.userId;
 
-      SchedulerServices.createEmployee({
-        firstName,
-        lastName,
-        email: this.newEmployee.email.trim(),
-        phoneNum: this.newEmployee.phone.trim(),
-      })
-        .then(() => {
-          this.closeAddDialog();
-          this.fetchEmployees();
-        })
-        .catch((error) => {
-          console.log("error", error);
-        });
-    },
+  const nameParts = this.newEmployee.name.trim().split(/\s+/);
+  const firstName = nameParts.shift() || "";
+  const lastName = nameParts.join(" ") || "Employee";
+
+  // 2. Add the employerId (currentUserId) to the request
+  const payload = {
+    firstName,
+    lastName,
+    email: this.newEmployee.email.trim(),
+    phoneNum: this.newEmployee.phone.trim(),
+    userId: currentUserId // This allows the backend to find which Employer record to link
+  };
+
+  SchedulerServices.createEmployee(payload)
+    .then(() => {
+      this.closeAddDialog();
+      this.fetchEmployees();
+    })
+    .catch((error) => {
+      console.log("error", error);
+    });
+},
     deleteEmployee(id) {
       if (!id || !window.confirm("Delete this employee?")) {
         return;

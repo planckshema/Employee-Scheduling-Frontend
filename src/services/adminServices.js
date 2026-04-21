@@ -17,8 +17,6 @@ export default {
   deleteEmployee(id) {
     
     return apiClient.delete(`admin/staff/${id}`); 
-    
-   
   },
   updateUser(id, data) {
     return apiClient.put(`admin/users/${id}`, data);
