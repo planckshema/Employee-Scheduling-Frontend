@@ -122,6 +122,7 @@ router.beforeEach((to, from, next) => {
   const user = Utils.getStore("user");
   const isLoggedIn = Boolean(user && user.token);
 
+  if (to.name !== "login" && !isLoggedIn) {
   // 1. Always allow access to login pages
   if (to.name === "adminLogin" || to.name === "login") {
     // If already logged in, skip login and go to roles (or dashboard)
