@@ -11,17 +11,15 @@ export default {
     return apiClient.get("admin/users", { params });
   },
   createUser(data) {
-
     return apiClient.post("admin/users", data);
-  },
-  deleteEmployee(id) {
-    
-    return apiClient.delete(`admin/staff/${id}`); 
   },
   updateUser(id, data) {
     return apiClient.put(`admin/users/${id}`, data);
   },
   deleteUser(id) {
     return apiClient.delete(`admin/users/${id}`);
+  },
+  deleteEmployee(id) {
+    return apiClient.delete(`admin/staff/${id}`);
   },
 };
