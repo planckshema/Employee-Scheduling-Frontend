@@ -153,6 +153,11 @@ export default {
         };
         this.savedSnapshot = JSON.stringify(this.form);
         this.successMessage = "Employer profile updated successfully.";
+        window.dispatchEvent(
+          new CustomEvent("employer-profile-updated", {
+            detail: data || null,
+          }),
+        );
       } catch (error) {
         this.errorMessage =
           error.response?.data?.message || "We could not save employer settings.";

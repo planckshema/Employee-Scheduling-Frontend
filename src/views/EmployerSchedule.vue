@@ -12,25 +12,32 @@
 
     <div class="schedule-toolbar">
       <div class="week-nav">
-        <button class="icon-button" @click="goToPreviousWeek">
+        <button type="button" class="icon-button" @click="goToPreviousWeek">
           <v-icon size="20">mdi-chevron-left</v-icon>
         </button>
         <strong>Week of {{ weekLabel }}</strong>
-        <button class="icon-button" @click="goToNextWeek">
+        <button type="button" class="icon-button" @click="goToNextWeek">
           <v-icon size="20">mdi-chevron-right</v-icon>
         </button>
       </div>
 
       <div class="actions">
-        <button class="ghost-button" @click="openTemplateDialog">
+        <button type="button" class="ghost-button" @click="openTemplateDialog">
           <v-icon size="18">mdi-content-copy</v-icon>
           Templates
         </button>
-        <button class="primary-button" @click="openNewShiftDialog()">
+        <button type="button" class="primary-button" @click="openNewShiftDialog()">
           <v-icon size="18">mdi-plus</v-icon>
           New Shift
         </button>
       </div>
+    </div>
+
+    <div class="position-legend">
+      <span v-for="item in positionLegendItems" :key="item.name" class="legend-item">
+        <span class="legend-color" :style="{ backgroundColor: item.color }"></span>
+        {{ item.name }}
+      </span>
     </div>
 
     <section class="schedule-summary">
@@ -121,7 +128,7 @@
       <section class="modal">
         <header>
           <h2>{{ editingShiftId ? "Edit Shift" : "New Shift" }}</h2>
-          <button class="icon-inline" @click="closeShiftDialog">
+          <button type="button" class="icon-inline" @click="closeShiftDialog">
             <v-icon>mdi-close</v-icon>
           </button>
         </header>
@@ -172,8 +179,8 @@
           <button v-if="editingShiftId" class="ghost-button danger-button footer-left" @click="deleteEditingShift">
             Delete Shift
           </button>
-          <button class="ghost-button" @click="closeShiftDialog">Cancel</button>
-          <button class="primary-button" @click="saveShift">
+          <button type="button" class="ghost-button" @click="closeShiftDialog">Cancel</button>
+          <button type="button" class="primary-button" @click="saveShift">
             {{ editingShiftId ? "Update Shift" : "Save Shift" }}
           </button>
         </footer>
@@ -184,21 +191,26 @@
       <section class="modal template-modal">
         <header>
           <h2>Schedule Templates</h2>
-          <button class="icon-inline" @click="templateDialog = false">
+          <button type="button" class="icon-inline" @click="templateDialog = false">
             <v-icon>mdi-close</v-icon>
           </button>
         </header>
 
         <div class="template-actions">
-          <button class="primary-button" @click="generateSuggestedWeek">
-            <v-icon size="18">mdi-auto-fix</v-icon>
-            Generate Suggested Week
-          </button>
-          <button class="ghost-button" @click="saveCurrentWeekAsTemplate">
+          <button
+            type="button"
+            class="ghost-button"
+            :disabled="isSavingTemplate"
+            @click="saveCurrentWeekAsTemplate"
+          >
             <v-icon size="18">mdi-content-save-outline</v-icon>
-            Save Current Week
+            {{ isSavingTemplate ? "Saving Current Week..." : "Save Current Week" }}
           </button>
         </div>
+
+        <p v-if="templateMessage" class="template-message">
+          {{ templateMessage }}
+        </p>
 
         <p class="muted modal-copy">
           Generated suggestions use employee availability, your business hours, and your business type to prefill a
@@ -212,10 +224,10 @@
               <p>{{ template.description || "Saved schedule template" }}</p>
             </div>
             <div class="template-card-actions">
-              <button class="primary-button small-button" @click="applyTemplate(template)">
+              <button type="button" class="primary-button small-button" @click="promptApplyTemplate(template)">
                 Apply
               </button>
-              <button class="ghost-button small-button" @click="deleteTemplate(template.id)">
+              <button type="button" class="ghost-button small-button" @click="promptDeleteTemplate(template.id)">
                 Delete
               </button>
             </div>
@@ -225,7 +237,27 @@
         <p v-else class="muted">No templates saved yet.</p>
 
         <footer>
-          <button class="ghost-button" @click="templateDialog = false">Close</button>
+          <button type="button" class="ghost-button" @click="templateDialog = false">Close</button>
+        </footer>
+      </section>
+    </div>
+
+    <div v-if="confirmDialog" class="overlay">
+      <section class="modal confirm-modal">
+        <header>
+          <h2>{{ confirmDialogTitle }}</h2>
+          <button type="button" class="icon-inline" @click="cancelConfirmDialog">
+            <v-icon>mdi-close</v-icon>
+          </button>
+        </header>
+
+        <p class="confirm-message">{{ confirmDialogMessage }}</p>
+
+        <footer>
+          <button type="button" class="ghost-button" @click="cancelConfirmDialog">Cancel</button>
+          <button type="button" class="primary-button" @click="confirmDialogSubmit">
+            {{ confirmDialogPrimary }}
+          </button>
         </footer>
       </section>
     </div>
@@ -233,6 +265,11 @@
 </template>
 
 <script>
+import { defineComponent } from 'vue'
+import FullCalendar from '@fullcalendar/vue3'
+import dayGridPlugin from '@fullcalendar/daygrid'
+import timeGridPlugin from '@fullcalendar/timegrid'
+import interactionPlugin from '@fullcalendar/interaction'
 import EmployerServices from "@/services/employerServices";
 import SchedulerServices from "@/services/schedulerServices";
 import TemplateServices from "@/services/templateServices";
@@ -261,6 +298,26 @@ const POSITION_LIBRARY = [
     positions: ["Lab Assistant", "IT Support", "Tech Monitor", "Equipment Checkout", "Help Desk"],
   },
 ];
+
+const POSITION_COLOR_PALETTE = [
+  "#1E88E5",
+  "#D81B60",
+  "#FB8C00",
+  "#43A047",
+  "#8E24AA",
+  "#00ACC1",
+  "#F4511E",
+  "#6D4C41",
+  "#5E35B1",
+  "#3949AB",
+];
+
+const getPositionColor = (position) => {
+  if (!position) return "#9E9E9E";
+  const normalized = String(position).trim().toLowerCase();
+  const hash = Array.from(normalized).reduce((sum, char) => sum + char.charCodeAt(0), 0);
+  return POSITION_COLOR_PALETTE[hash % POSITION_COLOR_PALETTE.length];
+};
 
 const toIsoDate = (date) => {
   const year = date.getFullYear();
@@ -306,12 +363,19 @@ const toTimeString = (totalMinutes) => {
 };
 
 const formatSlotLabel = (startTime, endTime) => `${startTime} - ${endTime}`;
+const DEFAULT_START_MINUTES = 7 * 60;
+const DEFAULT_END_MINUTES = 22 * 60;
 
-const buildDefaultSlots = () => {
+const buildDefaultSlots = (startMinutes = DEFAULT_START_MINUTES, endMinutes = DEFAULT_END_MINUTES) => {
   const slots = [];
-  for (let hour = 7; hour < 22; hour += 1) {
-    const startTime = `${String(hour).padStart(2, "0")}:00`;
-    const endTime = `${String(hour + 1).padStart(2, "0")}:00`;
+  const normalizedStart = Math.max(0, Math.min(startMinutes, 23 * 60));
+  const normalizedEnd = Math.max(normalizedStart + 60, Math.min(endMinutes, 24 * 60));
+  const firstSlot = Math.floor(normalizedStart / 60) * 60;
+
+  for (let slotStart = firstSlot; slotStart < normalizedEnd; slotStart += 60) {
+    const slotEnd = Math.min(slotStart + 60, 24 * 60);
+    const startTime = toTimeString(slotStart);
+    const endTime = toTimeString(slotEnd);
     slots.push({
       key: `${startTime}-${endTime}`,
       startTime,
@@ -343,12 +407,38 @@ const extractPositionOptions = (niche) => {
 
 const parseOperatingHours = (value) => {
   const raw = String(value || "").trim();
-  const match = raw.match(/(\d{1,2})(?::(\d{2}))?\s*(am|pm)?\s*-\s*(\d{1,2})(?::(\d{2}))?\s*(am|pm)?/i);
+  const timeMatches = Array.from(
+    raw.matchAll(/(\d{1,2})(?:[:.](\d{2}))?\s*(a\.?m\.?|p\.?m\.?|am|pm)?/gi),
+  ).filter((match) => {
+    const hour = Number(match[1]);
+    const minute = Number(match[2] || "0");
+    return hour >= 0 && hour <= 24 && minute >= 0 && minute < 60;
+  });
 
-  const to24HourMinutes = (hourValue, minuteValue, meridiem) => {
-    let hour = Number(hourValue);
-    const minute = Number(minuteValue || "0");
-    const mer = String(meridiem || "").toLowerCase();
+  const normalizeMeridiem = (value) => {
+    const normalized = String(value || "").toLowerCase().replace(/\./g, "");
+    if (normalized === "am" || normalized === "pm") {
+      return normalized;
+    }
+    return "";
+  };
+
+  const inferMeridiem = (hour, meridiem, pairedMeridiem, isStart) => {
+    if (meridiem) {
+      return meridiem;
+    }
+
+    if (pairedMeridiem === "pm" && isStart && hour < 12) {
+      return "am";
+    }
+
+    return "";
+  };
+
+  const to24HourMinutes = (timeToken, pairedMeridiem, isStart) => {
+    let hour = Number(timeToken?.hour || "0");
+    const minute = Number(timeToken?.minute || "0");
+    const mer = inferMeridiem(hour, timeToken?.meridiem || "", pairedMeridiem, isStart);
 
     if (mer === "pm" && hour !== 12) {
       hour += 12;
@@ -365,15 +455,42 @@ const parseOperatingHours = (value) => {
     lower.includes(dayKey),
   );
 
+  const timeTokens = timeMatches.map((match) => ({
+    hour: match[1],
+    minute: match[2] || "0",
+    meridiem: normalizeMeridiem(match[3]),
+  }));
+  const rangeTokens = timeTokens.slice(-2);
+
+  let startMinutes = DEFAULT_START_MINUTES;
+  let endMinutes = DEFAULT_END_MINUTES;
+
+  if (rangeTokens.length >= 2) {
+    const [startToken, endToken] = rangeTokens;
+    startMinutes = to24HourMinutes(startToken, endToken.meridiem, true);
+    endMinutes = to24HourMinutes(endToken, startToken.meridiem, false);
+
+    if (!startToken.meridiem && !endToken.meridiem && endMinutes <= startMinutes && Number(endToken.hour) <= 12) {
+      endMinutes += 12 * 60;
+    }
+  }
+
+  if (endMinutes <= startMinutes) {
+    endMinutes = Math.min(startMinutes + 60, 24 * 60);
+  }
+
   return {
-    startMinutes: match ? to24HourMinutes(match[1], match[2], match[3]) : 9 * 60,
-    endMinutes: match ? to24HourMinutes(match[4], match[5], match[6]) : 17 * 60,
+    startMinutes,
+    endMinutes,
     activeDayKeys: activeDayKeys.length ? activeDayKeys : ["mon", "tue", "wed", "thu", "fri"],
   };
 };
 
-export default {
+export default defineComponent({
   name: "EmployerSchedule",
+  components: {
+    FullCalendar
+  },
   data() {
     const monday = startOfWeekMonday(new Date());
     return {
@@ -383,6 +500,8 @@ export default {
       currentWeekStart: monday,
       employees: [],
       employeeAvailabilityIndex: {},
+      employeeClassSchedulesIndex: {},
+      employeeUnavailableBlocksIndex: {},
       employerProfile: null,
       taskLists: [],
       templates: [],
@@ -398,6 +517,17 @@ export default {
         endTime: "17:00",
         taskListId: null,
       },
+      templateName: "",
+      templateDescription: "",
+      templateMessage: "",
+      isLoadingTemplates: false,
+      isSavingTemplate: false,
+      confirmDialog: false,
+      confirmDialogTitle: "",
+      confirmDialogMessage: "",
+      confirmDialogPrimary: "",
+      confirmDialogTemplate: null,
+      confirmDialogHandler: null,
     };
   },
   computed: {
@@ -430,6 +560,15 @@ export default {
         return shiftDate && shiftDate >= weekStart && shiftDate < weekEnd;
       });
     },
+    businessWindow() {
+      return parseOperatingHours(this.employerProfile?.operatingHours);
+    },
+    calendarSlotMinTime() {
+      return `${toTimeString(this.businessWindow.startMinutes)}:00`;
+    },
+    calendarSlotMaxTime() {
+      return `${toTimeString(this.businessWindow.endMinutes)}:00`;
+    },
     timeSlots() {
       const shiftSlots = this.shiftsForCurrentWeek.map((shift) => ({
         key: `${shift.startTime}-${shift.endTime}`,
@@ -439,7 +578,10 @@ export default {
       }));
 
       return Array.from(
-        new Map([...buildDefaultSlots(), ...shiftSlots].map((slot) => [slot.key, slot])).values(),
+        new Map([
+          ...buildDefaultSlots(this.businessWindow.startMinutes, this.businessWindow.endMinutes),
+          ...shiftSlots,
+        ].map((slot) => [slot.key, slot])).values(),
       ).sort((a, b) => toMinutes(a.startTime) - toMinutes(b.startTime));
     },
     unassignedShiftCount() {
@@ -454,6 +596,31 @@ export default {
     positionOptions() {
       return extractPositionOptions(this.employerProfile?.niche);
     },
+    positionLegendItems() {
+      const positions = new Map();
+      this.shiftsForCurrentWeek.forEach((shift) => {
+        const name = shift.position || "Unassigned";
+        if (!positions.has(name)) {
+          positions.set(name, {
+            name,
+            color: getPositionColor(shift.position),
+          });
+        }
+      });
+
+      if (!positions.size) {
+        this.positionOptions.forEach((name) => {
+          if (!positions.has(name)) {
+            positions.set(name, {
+              name,
+              color: getPositionColor(name),
+            });
+          }
+        });
+      }
+
+      return Array.from(positions.values()).slice(0, 8);
+    },
     draftAvailabilityWarning() {
       const employeeId = this.parseSelectedEmployeeId(this.newShift.employeeId);
       if (!employeeId || !this.newShift.date || !this.newShift.startTime || !this.newShift.endTime) {
@@ -467,14 +634,78 @@ export default {
         endTime: this.newShift.endTime,
       });
     },
+    calendarEvents() {
+      return this.shiftsForCurrentWeek.map(shift => {
+        const status = this.getShiftStatus(shift);
+        const baseColor = getPositionColor(shift.position);
+        const eventTitle = status === "conflict"
+          ? `⚠️ ${shift.position || 'Shift'} - ${shift.employeeName || 'Unassigned'}`
+          : `${shift.position || 'Shift'} - ${shift.employeeName || 'Unassigned'}`;
+
+        return {
+          id: shift.shiftId,
+          title: eventTitle,
+          start: `${shift.date}T${shift.startTime}`,
+          end: `${shift.date}T${shift.endTime}`,
+          extendedProps: {
+            shift: shift
+          },
+          color: status === "unassigned" ? '#FFC107' : status === "conflict" ? '#D32F2F' : baseColor,
+          borderColor: status === "conflict" ? '#B71C1C' : '#223047',
+          textColor: '#fff',
+        };
+      });
+    },
+    calendarOptions() {
+      return {
+        plugins: [dayGridPlugin, timeGridPlugin, interactionPlugin],
+        headerToolbar: false, // We have our own toolbar
+        initialView: 'timeGridWeek',
+        initialDate: this.currentWeekStart,
+        height: 'auto',
+        slotMinTime: this.calendarSlotMinTime,
+        slotMaxTime: this.calendarSlotMaxTime,
+        allDaySlot: false,
+        editable: true,
+        selectable: true,
+        selectMirror: true,
+        dayMaxEvents: true,
+        weekends: true,
+        events: this.calendarEvents,
+        select: this.handleDateSelect,
+        eventClick: this.handleEventClick,
+        eventDrop: this.handleEventDrop,
+        eventResize: this.handleEventResize,
+        eventMouseEnter: this.handleEventMouseEnter,
+        eventMouseLeave: this.handleEventMouseLeave
+      };
+    },
   },
   created() {
     this.bootstrapPage();
   },
+  mounted() {
+    window.addEventListener("employer-profile-updated", this.handleEmployerProfileUpdated);
+  },
+  beforeUnmount() {
+    window.removeEventListener("employer-profile-updated", this.handleEmployerProfileUpdated);
+  },
+  watch: {
+    currentWeekStart() {
+      this.$nextTick(() => {
+        if (this.$refs.calendarRef) {
+          this.$refs.calendarRef.getApi().gotoDate(this.currentWeekStart);
+        }
+      });
+    },
+    "employerProfile.operatingHours"() {
+      this.refreshCalendarBusinessHours();
+    }
+  },
   methods: {
     async bootstrapPage() {
+      await this.fetchEmployees();
       await Promise.all([
-        this.fetchEmployees(),
         this.fetchEmployeeAvailabilityIndex(),
         this.fetchEmployerProfile(),
         this.fetchTaskLists(),
@@ -487,7 +718,11 @@ export default {
         id: row.EmployeeID,
         name: `${row.firstName} ${row.lastName}`.trim(),
         email: row.email,
+        studentId: row.studentId || "",
       };
+    },
+    getSchoolLookupId(employee) {
+      return employee?.studentId || String(employee?.email || "").split("@")[0] || "";
     },
     parseSelectedEmployeeId(id) {
       if (id === null || id === undefined || id === "") {
@@ -514,8 +749,36 @@ export default {
         this.employeeAvailabilityIndex = Object.fromEntries(
           (response.data || []).map((row) => [row.EmployeeID, normalizeAvailability(row.availability)]),
         );
+        this.employeeUnavailableBlocksIndex = Object.fromEntries(
+          (response.data || []).map((row) => [row.EmployeeID, row.unavailableBlocks || []]),
+        );
+
+        // Also fetch class schedules for employees
+        await this.fetchEmployeeClassSchedules();
       } catch (error) {
         console.log("error", error);
+      }
+    },
+    async fetchEmployeeClassSchedules() {
+      try {
+        // Fetch class schedules for all employees that have student IDs
+        const classSchedulePromises = this.employees
+          .filter(emp => this.getSchoolLookupId(emp))
+          .map(async (emp) => {
+            try {
+              const response = await SchoolServices.getClassSchedule(this.getSchoolLookupId(emp));
+              return [emp.id, response.data.classes || []];
+            } catch (error) {
+              console.warn(`Could not fetch class schedule for employee ${emp.id}:`, error);
+              return [emp.id, []];
+            }
+          });
+
+        const classSchedules = await Promise.all(classSchedulePromises);
+        this.employeeClassSchedulesIndex = Object.fromEntries(classSchedules);
+      } catch (error) {
+        console.warn("Error fetching employee class schedules:", error);
+        this.employeeClassSchedulesIndex = {};
       }
     },
     async fetchEmployerProfile() {
@@ -529,6 +792,21 @@ export default {
       } catch (error) {
         console.log("error", error);
       }
+    },
+    async handleEmployerProfileUpdated() {
+      await this.fetchEmployerProfile();
+    },
+    refreshCalendarBusinessHours() {
+      this.$nextTick(() => {
+        const calendarApi = this.$refs.calendarRef?.getApi();
+        if (!calendarApi) {
+          return;
+        }
+
+        calendarApi.setOption("slotMinTime", this.calendarSlotMinTime);
+        calendarApi.setOption("slotMaxTime", this.calendarSlotMaxTime);
+        calendarApi.updateSize();
+      });
     },
     async fetchTaskLists() {
       try {
@@ -548,14 +826,29 @@ export default {
     },
     async openTemplateDialog() {
       this.templateDialog = true;
+      this.templateMessage = "";
       await this.loadTemplates();
     },
     async loadTemplates() {
+      this.isLoadingTemplates = true;
       try {
         const response = await TemplateServices.getAllTemplates();
-        this.templates = response.data || [];
+        const responseData = response.data;
+        if (Array.isArray(responseData)) {
+          this.templates = responseData;
+        } else if (Array.isArray(responseData?.templates)) {
+          this.templates = responseData.templates;
+        } else {
+          this.templates = [];
+        }
+        return true;
       } catch (error) {
+        this.templates = [];
+        this.templateMessage = "Templates could not be loaded. Please try again.";
         console.log("error", error);
+        return false;
+      } finally {
+        this.isLoadingTemplates = false;
       }
     },
     getShiftsForSlot(isoDate, slot) {
@@ -628,22 +921,72 @@ export default {
         return "";
       }
 
-      const availability = this.getAvailabilityEntry(employeeId, shift.date);
-      if (!availability) {
+      const unavailableConflict = this.getUnavailableBlockConflictText(shift);
+      if (unavailableConflict) {
+        return unavailableConflict;
+      }
+
+      // Check for class schedule conflicts
+      const classConflict = this.getClassScheduleConflictText(shift);
+      if (classConflict) {
+        return classConflict;
+      }
+
+      return "";
+    },
+    getUnavailableBlockConflictText(shift) {
+      const employeeId = this.parseSelectedEmployeeId(shift.EmployeeID);
+      if (!employeeId) {
         return "";
       }
 
-      if (!availability.available) {
-        return "This employee is marked unavailable for that day.";
+      const shiftDate = parseIsoDate(shift.date);
+      if (!shiftDate) {
+        return "";
       }
+
+      const dayKey = dayKeys[shiftDate.getDay()];
+      const blocks = (this.employeeUnavailableBlocksIndex[employeeId] || [])
+        .filter(block => block.dayKey === dayKey);
+      const shiftStart = toMinutes(shift.startTime);
+      const shiftEnd = toMinutes(shift.endTime);
+
+      for (const block of blocks) {
+        const blockStart = toMinutes(block.startTime);
+        const blockEnd = toMinutes(block.endTime);
+        if (shiftStart < blockEnd && shiftEnd > blockStart) {
+          return `This shift overlaps unavailable time (${block.startTime} - ${block.endTime}).`;
+        }
+      }
+
+      return "";
+    },
+    getClassScheduleConflictText(shift) {
+      const employeeId = this.parseSelectedEmployeeId(shift.EmployeeID);
+      if (!employeeId) {
+        return "";
+      }
+
+      const classSchedules = this.employeeClassSchedulesIndex[employeeId] || [];
+      const shiftDate = parseIsoDate(shift.date);
+      if (!shiftDate) {
+        return "";
+      }
+
+      const dayKey = dayKeys[shiftDate.getDay()];
+      const dayClasses = classSchedules.filter(cls => cls.dayOfWeek === dayKey);
 
       const shiftStart = toMinutes(shift.startTime);
       const shiftEnd = toMinutes(shift.endTime);
-      const availabilityStart = toMinutes(availability.startTime);
-      const availabilityEnd = toMinutes(availability.endTime);
 
-      if (shiftStart < availabilityStart || shiftEnd > availabilityEnd) {
-        return `This shift is outside the employee's available hours (${availability.startTime} - ${availability.endTime}).`;
+      for (const cls of dayClasses) {
+        const classStart = toMinutes(cls.startTime);
+        const classEnd = toMinutes(cls.endTime);
+
+        // Check if shift overlaps with class
+        if (shiftStart < classEnd && shiftEnd > classStart) {
+          return `This shift conflicts with ${cls.courseName} (${cls.startTime} - ${cls.endTime}).`;
+        }
       }
 
       return "";
@@ -651,8 +994,30 @@ export default {
     hasAvailabilityConflict(shift) {
       return Boolean(this.getAvailabilityConflictText(shift));
     },
+    getShiftStatus(shift) {
+      if (!shift.EmployeeID) {
+        return "unassigned";
+      }
+      if (this.hasAvailabilityConflict(shift)) {
+        return "conflict";
+      }
+      return null;
+    },
+    promptDeleteShift(shiftId) {
+      if (!shiftId) {
+        return;
+      }
+      this.openConfirmDialog({
+        title: "Delete Shift",
+        message: "Delete this shift? This action cannot be undone.",
+        primary: "Delete Shift",
+        handler: async () => {
+          await this.deleteShift(shiftId);
+        },
+      });
+    },
     async deleteShift(shiftId) {
-      if (!shiftId || !window.confirm("Delete this shift?")) {
+      if (!shiftId) {
         return;
       }
 
@@ -667,7 +1032,7 @@ export default {
       }
     },
     deleteEditingShift() {
-      this.deleteShift(this.editingShiftId);
+      this.promptDeleteShift(this.editingShiftId);
     },
     async saveShift() {
       if (!this.newShift.date || !this.newShift.startTime || !this.newShift.endTime || !this.newShift.position) {
@@ -687,15 +1052,23 @@ export default {
 
       const availabilityConflict = this.getAvailabilityConflictText(payload);
       if (availabilityConflict) {
-        const shouldContinue = window.confirm(`${availabilityConflict} Do you still want to save this shift?`);
         this.warningMessage = availabilityConflict;
-        if (!shouldContinue) {
-          return;
-        }
+        this.openConfirmDialog({
+          title: "Confirm Shift Save",
+          message: `${availabilityConflict} Do you still want to save this shift?`,
+          primary: "Save Anyway",
+          handler: async () => {
+            await this.submitShiftSave(payload, selectedEmployee);
+          },
+        });
+        return;
       } else {
         this.warningMessage = "";
       }
 
+      await this.submitShiftSave(payload, selectedEmployee);
+    },
+    async submitShiftSave(payload, selectedEmployee) {
       try {
         const saveRequest = this.editingShiftId
           ? SchedulerServices.updateShift(this.editingShiftId, payload)
@@ -741,13 +1114,22 @@ export default {
         console.log("error", error);
       }
     },
-    async saveCurrentWeekAsTemplate() {
-      const name = window.prompt("Enter a name for this template:");
-      if (!name) {
-        return;
-      }
+    currentWeekTemplateKey() {
+      return `Saved from week of ${this.weekLabel}`;
+    },
+    findTemplateForCurrentWeek() {
+      const weekKey = this.currentWeekTemplateKey().toLowerCase();
+      const weekName = `week of ${this.weekLabel}`.toLowerCase();
+      const templateList = Array.isArray(this.templates) ? this.templates : [];
 
-      const shifts = this.shiftsForCurrentWeek.map((shift) => {
+      return templateList.find((template) => {
+        const name = String(template.name || "").trim().toLowerCase();
+        const description = String(template.description || "").trim().toLowerCase();
+        return description === weekKey || name === weekName || name.includes(weekName);
+      }) || null;
+    },
+    buildTemplateShiftsForCurrentWeek() {
+      return this.shiftsForCurrentWeek.map((shift) => {
         const shiftDate = parseIsoDate(shift.date);
         return {
           EmployeeID: shift.EmployeeID || null,
@@ -757,32 +1139,79 @@ export default {
           dayOfWeek: shiftDate ? shiftDate.getDay() : 1,
         };
       });
-
-      if (!shifts.length) {
-        this.warningMessage = "There are no shifts in the current week to save as a template.";
+    },
+    async saveCurrentWeekAsTemplate() {
+      if (this.isSavingTemplate) {
         return;
       }
+
+      this.templateMessage = "";
+      this.warningMessage = "";
+      this.successMessage = "";
+
+      if (!this.shiftsForCurrentWeek.length) {
+        this.templateMessage = "There are no shifts in the current week to save as a template.";
+        return;
+      }
+
+      const existingTemplate = this.findTemplateForCurrentWeek();
+      if (existingTemplate) {
+        this.templateMessage =
+          `This week is already saved as "${existingTemplate.name}". Delete that template first if you want to save it again.`;
+        return;
+      }
+
+      this.templateName = `Week of ${this.weekLabel}`;
+      this.templateDescription = this.currentWeekTemplateKey();
+      this.isSavingTemplate = true;
 
       try {
         await TemplateServices.createTemplate({
-          name,
-          description: `Saved from week of ${this.weekLabel}`,
-          shifts,
+          name: this.templateName,
+          description: this.templateDescription,
+          shifts: this.buildTemplateShiftsForCurrentWeek(),
         });
-        this.successMessage = "Template saved successfully.";
-        await this.loadTemplates();
+        this.templateMessage = `Saved "${this.templateName}" as a schedule template.`;
+        this.loadTemplates();
       } catch (error) {
+        if (error?.response?.status === 409) {
+          this.templateMessage =
+            error.response.data?.message ||
+            "This week is already saved as a template. Delete that template first if you want to save it again.";
+        } else {
+          this.warningMessage = "Failed to save template. Please try again.";
+        }
         console.log("error", error);
+      } finally {
+        this.isSavingTemplate = false;
+        this.templateName = "";
+        this.templateDescription = "";
       }
     },
+    formatDateDay(isoDate) {
+      const date = parseIsoDate(isoDate);
+      if (!date) return "";
+      const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+      return `${days[date.getDay()]} ${date.getMonth() + 1}/${date.getDate()}`;
+    },
+    openConfirmDialog({ title, message, primary, handler }) {
+      this.confirmDialogTitle = title;
+      this.confirmDialogMessage = message;
+      this.confirmDialogPrimary = primary;
+      this.confirmDialogHandler = handler;
+      this.confirmDialog = true;
+    },
+    promptApplyTemplate(template) {
+      this.openConfirmDialog({
+        title: "Apply Template",
+        message: `Apply the template "${template.name}" to the current week and replace the existing shifts? This action cannot be undone.`,
+        primary: "Apply Template",
+        handler: async () => {
+          await this.applyTemplate(template);
+        },
+      });
+    },
     async applyTemplate(template) {
-      const shouldReplace = window.confirm(
-        "Apply this template to the current week and replace the existing shifts for this week?",
-      );
-      if (!shouldReplace) {
-        return;
-      }
-
       const shifts = (template.shifts || []).map((shift) => {
         const offset = shift.dayOfWeek === 0 ? 6 : shift.dayOfWeek - 1;
         const date = new Date(this.currentWeekStart);
@@ -798,6 +1227,20 @@ export default {
 
       await this.replaceCurrentWeekWithShifts(shifts, `Applied template "${template.name}".`);
       this.templateDialog = false;
+    },
+    cancelConfirmDialog() {
+      this.confirmDialog = false;
+      this.confirmDialogTitle = "";
+      this.confirmDialogMessage = "";
+      this.confirmDialogPrimary = "";
+      this.confirmDialogTemplate = null;
+      this.confirmDialogHandler = null;
+    },
+    async confirmDialogSubmit() {
+      if (typeof this.confirmDialogHandler === "function") {
+        await this.confirmDialogHandler();
+      }
+      this.cancelConfirmDialog();
     },
     buildSuggestedWeekBlueprints() {
       const businessWindow = parseOperatingHours(this.employerProfile?.operatingHours);
@@ -854,27 +1297,35 @@ export default {
         return;
       }
 
-      const shouldReplace = window.confirm(
-        "Generate a suggested week and replace the current week's shifts? You can still edit the result afterward.",
-      );
-      if (!shouldReplace) {
-        return;
-      }
-
-      await this.replaceCurrentWeekWithShifts(
-        generatedShifts,
-        "Suggested weekly schedule generated. Review and tweak it as needed.",
-      );
-      this.templateDialog = false;
+      this.openConfirmDialog({
+        title: "Generate Suggested Week",
+        message:
+          "Generate a suggested week and replace the current week's shifts? You can still edit the result afterward.",
+        primary: "Generate Week",
+        handler: async () => {
+          await this.replaceCurrentWeekWithShifts(
+            generatedShifts,
+            "Suggested weekly schedule generated. Review and tweak it as needed.",
+          );
+          this.templateDialog = false;
+        },
+      });
+    },
+    promptDeleteTemplate(id) {
+      this.openConfirmDialog({
+        title: "Delete Template",
+        message: "Delete this template? This action cannot be undone.",
+        primary: "Delete Template",
+        handler: async () => {
+          await this.deleteTemplate(id);
+        },
+      });
     },
     async deleteTemplate(id) {
-      if (!window.confirm("Delete this template?")) {
-        return;
-      }
-
       try {
         await TemplateServices.deleteTemplate(id);
         await this.loadTemplates();
+        this.templateMessage = "";
       } catch (error) {
         console.log("error", error);
       }
@@ -943,6 +1394,31 @@ p {
   margin-bottom: 18px;
 }
 
+.position-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: #f5f7fb;
+  color: #1f2937;
+  font-size: 13px;
+}
+
+.legend-color {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+}
+
 .schedule-summary {
   margin-bottom: 18px;
   flex-wrap: wrap;
@@ -990,13 +1466,15 @@ p {
 }
 
 .warning-card {
-  background: #fff9ef;
-  border-color: #f4ddb2;
+  background: #fff3e0;
+  border-color: #ffb74d;
+  color: #8a4f00;
 }
 
 .conflict-card {
-  background: #fff4f5;
-  border-color: #f1c8cf;
+  background: #ffebee;
+  border-color: #f44336;
+  color: #b71c1c;
 }
 
 .icon-button,
@@ -1041,6 +1519,60 @@ p {
 .small-button {
   padding: 8px 12px;
   font-size: 13px;
+}
+
+.calendar-container {
+  border: 1px solid rgba(220, 225, 236, 0.95);
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.93);
+  box-shadow: 0 22px 48px rgba(30, 41, 65, 0.06);
+  padding: 12px;
+  overflow: hidden;
+}
+
+.calendar-container :deep(.fc) {
+  font-family: inherit;
+}
+
+.calendar-container :deep(.fc-header-toolbar) {
+  display: none;
+}
+
+.calendar-container :deep(.fc-view-harness) {
+  background: #fff;
+}
+
+.calendar-container :deep(.fc-col-header) {
+  background: #f5f7fb;
+}
+
+.calendar-container :deep(.fc-col-header-cell) {
+  border: 1px solid #e7ebf3;
+  padding: 16px 14px;
+  font-size: 14px;
+  color: #223047;
+  font-weight: 600;
+}
+
+.calendar-container :deep(.fc-timegrid-slot) {
+  border: 1px solid #e7ebf3;
+}
+
+.calendar-container :deep(.fc-timegrid-axis) {
+  border: 1px solid #e7ebf3;
+}
+
+.calendar-container :deep(.fc-event) {
+  border-radius: 8px;
+  border: none;
+  padding: 4px 8px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.calendar-container :deep(.fc-event:hover) {
+  opacity: 0.8;
 }
 
 .schedule-table-wrap {
@@ -1281,6 +1813,16 @@ p {
   margin-bottom: 16px;
 }
 
+.template-message {
+  margin-top: 12px;
+  padding: 12px 14px;
+  border: 1px solid #efd196;
+  border-radius: 8px;
+  background: #fff8eb;
+  color: #8a4f00;
+  font-weight: 700;
+}
+
 .template-actions {
   display: flex;
   gap: 10px;
@@ -1312,6 +1854,60 @@ p {
   align-items: flex-start;
 }
 
+.confirm-modal {
+  max-width: 520px;
+}
+
+.confirm-message {
+  margin-top: 14px;
+  color: #4b5563;
+  line-height: 1.6;
+}
+
+.confirm-modal footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.day-label {
+  padding: 4px 8px;
+  display: inline-block;
+  font-weight: 600;
+  color: #223047;
+}
+
+.position-badge {
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  display: inline-block;
+}
+
+.modal textarea {
+  width: 100%;
+  border: none;
+  background: #f1f2f7;
+  border-radius: 12px;
+  padding: 11px 16px;
+  outline: none;
+  font-family: inherit;
+  resize: vertical;
+  margin-bottom: 6px;
+}
+
+.full-width {
+  width: 100%;
+}
+
+.primary-button:disabled,
+.ghost-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 @media (max-width: 980px) {
   .tab-content {
     padding: 0 14px 18px;
@@ -1331,3 +1927,4 @@ p {
   }
 }
 </style>
+

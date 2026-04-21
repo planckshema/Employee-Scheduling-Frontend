@@ -30,9 +30,10 @@ export default {
     return apiClient.get(`/employee/dashboard/users/${userId}`);
   },
 
-  updateEmployeeAvailability(userId, weeklyAvailability) {
+  updateEmployeeAvailability(userId, weeklyAvailability, unavailableBlocks = []) {
     return apiClient.put(`/employee/dashboard/users/${userId}/availability`, {
       weeklyAvailability,
+      unavailableBlocks,
     });
   },
 
