@@ -6,7 +6,7 @@
 
       <button class="role-option" :disabled="loadingRole === 'employer'" @click="continueAsEmployer">
         <div class="role-icon">
-          <v-icon size="52" color="#5a6475">mdi-account-group-outline</v-icon>
+          <v-icon size="52" color="primary">mdi-account-group-outline</v-icon>
         </div>
         <h2>Employer</h2>
         <span>Manage team schedules and shifts</span>
@@ -14,7 +14,7 @@
 
       <button class="role-option" :disabled="loadingRole === 'employee'" @click="continueAsEmployee">
         <div class="role-icon">
-          <v-icon size="52" color="#5a6475">mdi-account-circle-outline</v-icon>
+          <v-icon size="52" color="primary">mdi-account-circle-outline</v-icon>
         </div>
         <h2>Employee</h2>
         <span>View schedule, set availability, and trade shifts</span>
@@ -80,20 +80,23 @@ export default {
 <style scoped>
 .role-page {
   min-height: 100vh;
-  background: #dfe5f5;
+  background:
+    radial-gradient(circle at top left, rgba(123, 201, 111, 0.16), transparent 24%),
+    linear-gradient(180deg, #f8fcf6 0%, var(--app-bg) 54%, #e1eee0 100%);
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 24px;
+  padding: 28px;
 }
 
 .role-card {
   width: 100%;
   max-width: 560px;
-  border-radius: 14px;
-  background: #f8f8fb;
-  padding: 34px;
-  box-shadow: 0 10px 24px rgba(23, 27, 37, 0.05);
+  border: 1px solid var(--app-border);
+  border-radius: 28px;
+  background: rgba(255, 254, 251, 0.95);
+  padding: 38px;
+  box-shadow: var(--app-shadow-md);
 }
 
 h1 {
@@ -101,34 +104,36 @@ h1 {
   font-size: 52px;
   line-height: 1.05;
   margin-bottom: 10px;
-  font-weight: 700;
-  color: #121826;
+  font-weight: 800;
+  color: var(--app-text);
+  letter-spacing: -0.04em;
 }
 
 p {
   text-align: center;
-  color: #667289;
+  color: var(--app-text-soft);
   margin-bottom: 24px;
-  font-size: 20px;
+  font-size: 19px;
+  line-height: 1.6;
 }
 
 .role-option {
   width: 100%;
-  border: 1px solid #d9deea;
-  border-radius: 12px;
-  background: #fff;
-  margin-bottom: 14px;
-  padding: 24px;
+  border: 1px solid var(--app-border);
+  border-radius: 22px;
+  background: linear-gradient(180deg, var(--app-surface) 0%, var(--app-surface-soft) 100%);
+  margin-bottom: 16px;
+  padding: 26px 24px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  cursor: pointer;
-  transition: border-color 0.18s ease, transform 0.18s ease;
+  box-shadow: 0 14px 30px rgba(36, 74, 46, 0.05);
 }
 
 .role-option:hover {
-  border-color: #b9c3d8;
-  transform: translateY(-1px);
+  border-color: var(--app-border-strong);
+  transform: translateY(-2px);
+  box-shadow: 0 20px 36px rgba(36, 74, 46, 0.1);
 }
 
 .role-option:disabled {
@@ -138,21 +143,33 @@ p {
 }
 
 .role-option h2 {
-  margin-top: 6px;
+  margin: 10px 0 4px;
   margin-bottom: 4px;
   font-size: 34px;
-  color: #121826;
+  color: var(--app-text);
+  letter-spacing: -0.03em;
 }
 
 .role-option span {
-  color: #5c6880;
-  font-size: 20px;
+  color: var(--app-text-soft);
+  font-size: 18px;
+  line-height: 1.5;
 }
 
 .error-copy {
-  color: #b4233c;
+  color: var(--app-danger);
   margin-bottom: 0;
   font-size: 15px;
+}
+
+.role-icon {
+  width: 84px;
+  height: 84px;
+  border-radius: 24px;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(180deg, rgba(123, 201, 111, 0.16), rgba(79, 155, 88, 0.08));
+  border: 1px solid rgba(79, 155, 88, 0.18);
 }
 
 @media (max-width: 980px) {

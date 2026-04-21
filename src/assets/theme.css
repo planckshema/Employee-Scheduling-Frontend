@@ -1,0 +1,179 @@
+:root {
+  color-scheme: light;
+  --app-primary: #0b6e4f;
+  --app-primary-deep: #073b3a;
+  --app-secondary: #08a045;
+  --app-accent: #6bbf59;
+  --app-highlight: #21d375;
+  --app-bg: #edf8f2;
+  --app-bg-strong: #dff2e7;
+  --app-surface: #fffefb;
+  --app-surface-muted: #f2faf5;
+  --app-surface-soft: #f7fcf8;
+  --app-border: #cce7d7;
+  --app-border-strong: #9fd2b8;
+  --app-text: #073b3a;
+  --app-text-soft: #35675a;
+  --app-text-faint: #5c867a;
+  --app-success-bg: #ebf9f0;
+  --app-success-border: #b8e7ca;
+  --app-warning-bg: #f4fbef;
+  --app-warning-border: #cfe6b8;
+  --app-danger-bg: #fff1f1;
+  --app-danger-border: #efc7c7;
+  --app-danger: #b94c4c;
+  --app-shadow-sm: 0 18px 38px rgba(7, 59, 58, 0.08);
+  --app-shadow-md: 0 22px 52px rgba(7, 59, 58, 0.12);
+  --app-shadow-lg: 0 30px 70px rgba(7, 59, 58, 0.16);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#app {
+  min-height: 100%;
+  margin: 0;
+}
+
+body {
+  font-family: "Manrope", "Aptos", "Segoe UI", sans-serif;
+  color: var(--app-text);
+  background:
+    radial-gradient(circle at top left, rgba(33, 211, 117, 0.14), transparent 24%),
+    radial-gradient(circle at right 12% bottom 10%, rgba(107, 191, 89, 0.12), transparent 28%),
+    linear-gradient(180deg, #f8fdfa 0%, var(--app-bg) 44%, #dff2e7 100%);
+}
+
+body,
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+button,
+input,
+textarea,
+select {
+  transition:
+    border-color 0.2s ease,
+    background-color 0.2s ease,
+    box-shadow 0.2s ease,
+    color 0.2s ease,
+    transform 0.2s ease;
+}
+
+button {
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: not-allowed;
+}
+
+a {
+  color: inherit;
+}
+
+:focus-visible {
+  outline: 3px solid rgba(33, 211, 117, 0.26);
+  outline-offset: 2px;
+}
+
+::selection {
+  background: rgba(33, 211, 117, 0.24);
+  color: var(--app-text);
+}
+
+.v-application {
+  background: transparent !important;
+  color: var(--app-text) !important;
+  font-family: "Manrope", "Aptos", "Segoe UI", sans-serif !important;
+}
+
+.v-application__wrap,
+.v-main {
+  background: transparent !important;
+}
+
+.v-card {
+  border: 1px solid var(--app-border) !important;
+  border-radius: 22px !important;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.96) 0%, rgba(248, 252, 247, 0.98) 100%) !important;
+  box-shadow: var(--app-shadow-sm) !important;
+  color: var(--app-text) !important;
+}
+
+.v-card-title,
+.v-card-item .v-card-title,
+.v-toolbar-title {
+  color: var(--app-text) !important;
+  font-weight: 800 !important;
+}
+
+.v-card-text,
+.v-card-actions {
+  color: var(--app-text-soft) !important;
+}
+
+.v-alert {
+  border-radius: 16px !important;
+  border: 1px solid var(--app-border) !important;
+  box-shadow: none !important;
+}
+
+.v-overlay__scrim {
+  background: rgba(24, 44, 30, 0.46) !important;
+  backdrop-filter: blur(5px);
+}
+
+.v-btn {
+  border-radius: 14px !important;
+  box-shadow: none !important;
+  font-weight: 700 !important;
+  letter-spacing: 0 !important;
+  text-transform: none !important;
+}
+
+.v-btn--variant-text {
+  color: var(--app-primary) !important;
+}
+
+.v-btn--variant-elevated,
+.v-btn--variant-flat {
+  box-shadow: 0 16px 28px rgba(11, 110, 79, 0.18) !important;
+}
+
+.v-field {
+  border-radius: 16px !important;
+}
+
+.v-field__outline {
+  --v-field-border-opacity: 1 !important;
+  color: var(--app-border-strong) !important;
+}
+
+.v-field--focused .v-field__outline {
+  color: var(--app-primary) !important;
+}
+
+.v-field--variant-filled .v-field__overlay,
+.v-field--variant-solo .v-field__overlay {
+  background: var(--app-surface-muted) !important;
+  opacity: 1 !important;
+}
+
+.v-label,
+.v-field input,
+.v-field textarea,
+.v-field .v-field__input,
+.v-select__selection {
+  color: var(--app-text) !important;
+}

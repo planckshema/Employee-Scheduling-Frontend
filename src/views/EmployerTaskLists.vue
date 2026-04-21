@@ -259,16 +259,18 @@ export default {
 
 <style scoped>
 .tab-content {
-  padding: 0 20px 24px;
+  padding: 0 20px 28px;
 }
 
 h2 {
   margin: 0;
   font-size: 22px;
+  color: var(--app-text);
 }
 
 h3 {
   margin-bottom: 4px;
+  color: var(--app-text);
 }
 
 p {
@@ -286,14 +288,15 @@ p {
 .cards-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
-  gap: 14px;
+  gap: 16px;
 }
 
 .card {
-  border: 1px solid #dce1ec;
-  border-radius: 14px;
-  background: #fff;
-  padding: 14px;
+  border: 1px solid var(--app-border);
+  border-radius: 20px;
+  background: linear-gradient(180deg, var(--app-surface) 0%, var(--app-surface-soft) 100%);
+  padding: 16px;
+  box-shadow: var(--app-shadow-sm);
 }
 
 .card-top {
@@ -318,63 +321,67 @@ p {
   align-items: center;
   gap: 8px;
   margin-bottom: 4px;
-  color: #4e5c77;
+  color: var(--app-text-soft);
 }
 
 .card-footer {
   display: flex;
   justify-content: space-between;
-  border-top: 1px solid #e8ebf2;
+  border-top: 1px solid var(--app-border);
   padding-top: 8px;
 }
 
 .mini-tag {
-  background: #eceff5;
-  border-radius: 14px;
+  background: rgba(123, 201, 111, 0.18);
+  color: var(--app-primary);
+  border-radius: 999px;
   padding: 3px 9px;
   font-weight: 700;
   font-size: 12px;
 }
 
 .muted {
-  color: #617089;
+  color: var(--app-text-soft);
 }
 
 .icon-inline {
-  border: 1px solid #d5dae7;
-  background: #fff;
-  border-radius: 10px;
+  border: 1px solid var(--app-border);
+  background: var(--app-surface);
+  color: var(--app-text);
+  border-radius: 12px;
   width: 38px;
   height: 38px;
-  cursor: pointer;
+  box-shadow: 0 10px 18px rgba(36, 74, 46, 0.05);
 }
 
 .icon-inline.danger {
-  color: #e53935;
+  color: var(--app-danger);
 }
 
 .ghost-button,
 .primary-button {
-  border-radius: 12px;
-  padding: 11px 16px;
+  border-radius: 14px;
+  padding: 12px 18px;
   font-weight: 700;
-  border: 1px solid #d7dceb;
-  background: #fff;
+  border: 1px solid var(--app-border);
+  background: var(--app-surface);
+  color: var(--app-text);
   display: inline-flex;
   align-items: center;
   gap: 8px;
 }
 
 .primary-button {
-  border-color: #080c28;
-  background: #060828;
+  border-color: var(--app-primary-deep);
+  background: linear-gradient(135deg, var(--app-primary) 0%, var(--app-secondary) 100%);
   color: #fff;
+  box-shadow: 0 16px 28px rgba(47, 107, 63, 0.18);
 }
 
 .overlay {
   position: fixed;
   inset: 0;
-  background: rgba(22, 27, 39, 0.48);
+  background: rgba(24, 44, 30, 0.46);
   z-index: 12;
   display: flex;
   align-items: center;
@@ -385,11 +392,13 @@ p {
 .modal {
   width: 100%;
   max-width: 900px;
-  background: #fff;
-  border-radius: 18px;
-  padding: 22px;
+  background: linear-gradient(180deg, var(--app-surface) 0%, var(--app-surface-soft) 100%);
+  border: 1px solid var(--app-border);
+  border-radius: 24px;
+  padding: 24px;
   max-height: 94vh;
   overflow-y: auto;
+  box-shadow: var(--app-shadow-lg);
 }
 
 .modal header {
@@ -400,27 +409,37 @@ p {
 }
 
 .modal label {
-  font-size: 20px;
+  font-size: 15px;
   font-weight: 700;
   margin-top: 10px;
   margin-bottom: 6px;
   display: inline-block;
+  color: var(--app-text);
 }
 
 .modal input,
 .modal textarea {
   width: 100%;
-  border: none;
-  background: #f1f2f7;
-  border-radius: 12px;
-  min-height: 52px;
+  border: 1px solid var(--app-border);
+  background: var(--app-surface-soft);
+  border-radius: 16px;
+  min-height: 50px;
   padding: 11px 16px;
-  outline: none;
   margin-bottom: 6px;
+  color: var(--app-text);
 }
 
 .modal textarea {
-  min-height: 92px;
+  min-height: 110px;
+  resize: vertical;
+}
+
+.modal input:focus,
+.modal textarea:focus {
+  border-color: var(--app-primary);
+  background: var(--app-surface);
+  box-shadow: 0 0 0 4px rgba(79, 155, 88, 0.12);
+  outline: none;
 }
 
 .modal footer {

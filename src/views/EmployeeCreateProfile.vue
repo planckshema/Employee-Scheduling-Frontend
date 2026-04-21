@@ -109,8 +109,10 @@ export default {
 <style scoped>
 .onboarding-page {
   min-height: 100vh;
-  padding: 24px;
-  background: linear-gradient(135deg, #eef3fb 0%, #dde7f6 100%);
+  padding: 28px;
+  background:
+    radial-gradient(circle at top left, rgba(123, 201, 111, 0.16), transparent 24%),
+    linear-gradient(135deg, #f8fcf7 0%, var(--app-bg) 58%, #e2efe2 100%);
   display: flex;
   justify-content: center;
   align-items: center;
@@ -119,11 +121,11 @@ export default {
 .onboarding-card {
   width: 100%;
   max-width: 760px;
-  background: rgba(255, 255, 255, 0.95);
-  border: 1px solid #dce1ec;
-  border-radius: 24px;
-  padding: 32px;
-  box-shadow: 0 20px 45px rgba(28, 39, 64, 0.08);
+  background: rgba(255, 254, 251, 0.96);
+  border: 1px solid var(--app-border);
+  border-radius: 28px;
+  padding: 34px;
+  box-shadow: var(--app-shadow-md);
 }
 
 .heading {
@@ -136,22 +138,25 @@ export default {
   letter-spacing: 0.08em;
   font-size: 12px;
   font-weight: 800;
-  color: #3957ba;
+  color: var(--app-secondary);
 }
 
 h1 {
   margin: 0 0 10px;
   font-size: 42px;
+  color: var(--app-text);
+  letter-spacing: -0.03em;
 }
 
 p {
   margin: 0;
-  color: #627088;
+  color: var(--app-text-soft);
+  line-height: 1.6;
 }
 
 .message.error {
   margin-bottom: 16px;
-  color: #b4233c;
+  color: var(--app-danger);
 }
 
 .form-grid {
@@ -164,7 +169,7 @@ label {
   display: grid;
   gap: 8px;
   font-weight: 700;
-  color: #182234;
+  color: var(--app-text);
 }
 
 label.full {
@@ -173,11 +178,19 @@ label.full {
 
 input {
   width: 100%;
-  border: 1px solid #d7dceb;
-  border-radius: 14px;
-  background: #f9fbff;
+  min-height: 50px;
+  border: 1px solid var(--app-border);
+  border-radius: 16px;
+  background: var(--app-surface-soft);
   padding: 12px 14px;
   font: inherit;
+}
+
+input:focus {
+  border-color: var(--app-primary);
+  background: var(--app-surface);
+  box-shadow: 0 0 0 4px rgba(79, 155, 88, 0.12);
+  outline: none;
 }
 
 .actions {
@@ -189,20 +202,22 @@ input {
 
 .ghost-button,
 .primary-button {
-  border-radius: 12px;
-  padding: 11px 16px;
+  border-radius: 14px;
+  padding: 12px 18px;
   font-weight: 700;
 }
 
 .ghost-button {
-  border: 1px solid #d7dceb;
-  background: #fff;
+  border: 1px solid var(--app-border);
+  background: var(--app-surface);
+  color: var(--app-text);
 }
 
 .primary-button {
-  border: 1px solid #080c28;
-  background: #060828;
+  border: 1px solid var(--app-primary-deep);
+  background: linear-gradient(135deg, var(--app-primary) 0%, var(--app-secondary) 100%);
   color: #fff;
+  box-shadow: 0 18px 28px rgba(47, 107, 63, 0.18);
 }
 
 @media (max-width: 800px) {

@@ -73,18 +73,21 @@ export default {
 .admin-container {
   display: flex;
   min-height: 100vh;
-  background-color: #f4f7fa;
-  font-family: 'Inter', sans-serif;
+  background:
+    radial-gradient(circle at top left, rgba(123, 201, 111, 0.12), transparent 26%),
+    linear-gradient(180deg, #f8fcf7 0%, var(--app-bg) 100%);
 }
 
-/* Sidebar Styling */
 .sidebar {
   width: 260px;
-  background-color: #1a2138;
-  color: white;
+  background:
+    linear-gradient(180deg, rgba(35, 79, 47, 0.98) 0%, rgba(31, 67, 40, 0.98) 100%);
+  color: #f6fff4;
   display: flex;
   flex-direction: column;
-  padding: 24px;
+  padding: 28px 22px;
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: inset -1px 0 0 rgba(255, 255, 255, 0.04);
 }
 
 .logo-section {
@@ -95,13 +98,19 @@ export default {
 }
 
 .logo-icon {
-  font-size: 24px;
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.12);
+  font-size: 20px;
 }
 
 .logo-section h2 {
-  font-size: 18px;
+  font-size: 20px;
   margin: 0;
-  letter-spacing: 0.5px;
+  letter-spacing: -0.02em;
 }
 
 .nav-menu {
@@ -110,23 +119,25 @@ export default {
 
 .nav-item {
   display: block;
-  color: #a0aec0;
+  color: rgba(240, 250, 241, 0.76);
   text-decoration: none;
-  padding: 12px 16px;
-  border-radius: 8px;
-  margin-bottom: 8px;
-  transition: all 0.2s;
+  padding: 13px 16px;
+  border-radius: 14px;
+  margin-bottom: 10px;
+  font-weight: 700;
+  border: 1px solid transparent;
 }
 
-.nav-item:hover, .nav-item.active {
-  background-color: #2d3748;
-  color: white;
+.nav-item:hover,
+.nav-item.active {
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.08);
 }
 
-/* Main Content Styling */
 .main-content {
   flex-grow: 1;
-  padding: 40px;
+  padding: 36px;
 }
 
 .top-header {
@@ -137,18 +148,20 @@ export default {
 }
 
 .top-header h1 {
-  font-size: 28px;
-  color: #1a202c;
+  font-size: 34px;
+  color: var(--app-text);
   margin: 0;
+  letter-spacing: -0.03em;
 }
 
 .user-badge {
-  background-color: #ebf4ff;
-  color: #3182ce;
-  padding: 6px 12px;
+  background: rgba(123, 201, 111, 0.18);
+  color: var(--app-primary);
+  padding: 8px 14px;
   border-radius: 999px;
-  font-size: 14px;
-  font-weight: 600;
+  font-size: 13px;
+  font-weight: 800;
+  border: 1px solid rgba(79, 155, 88, 0.18);
 }
 
 .dashboard-grid {
@@ -159,53 +172,72 @@ export default {
 }
 
 .stat-card {
-  background: white;
+  background: linear-gradient(180deg, var(--app-surface) 0%, var(--app-surface-soft) 100%);
+  border: 1px solid var(--app-border);
   padding: 24px;
-  border-radius: 12px;
-  box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+  border-radius: 22px;
+  box-shadow: var(--app-shadow-sm);
 }
 
 .stat-card h3 {
   margin: 0 0 10px;
-  font-size: 14px;
-  color: #718096;
+  font-size: 13px;
+  color: var(--app-text-faint);
   text-transform: uppercase;
+  letter-spacing: 0.08em;
 }
 
 .stat-val {
   font-size: 32px;
-  font-weight: 700;
+  font-weight: 800;
   margin: 0;
-  color: #2d3748;
+  color: var(--app-text);
 }
 
 .status-ok {
-  color: #48bb78;
+  color: var(--app-primary);
 }
 
 .placeholder-card {
-  background: white;
+  background: linear-gradient(180deg, var(--app-surface) 0%, var(--app-surface-soft) 100%);
   padding: 40px;
-  border-radius: 12px;
-  border: 2px dashed #e2e8f0;
+  border-radius: 24px;
+  border: 1px dashed var(--app-border-strong);
   text-align: center;
-  color: #718096;
+  color: var(--app-text-soft);
+  box-shadow: var(--app-shadow-sm);
 }
 
-/* Logout Button */
 .logout-btn {
   width: 100%;
-  padding: 12px;
-  background-color: #e53e3e;
-  color: white;
-  border: none;
-  border-radius: 8px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.2s;
+  padding: 13px 16px;
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 14px;
+  font-weight: 700;
 }
 
 .logout-btn:hover {
-  background-color: #c53030;
+  background: rgba(255, 255, 255, 0.18);
+}
+
+@media (max-width: 980px) {
+  .admin-container {
+    display: block;
+  }
+
+  .sidebar {
+    width: 100%;
+  }
+
+  .main-content {
+    padding: 22px 16px;
+  }
+
+  .top-header,
+  .dashboard-grid {
+    display: grid;
+  }
 }
 </style>

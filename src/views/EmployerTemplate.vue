@@ -141,27 +141,24 @@ export default {
     left: 0;
     width: 100vw;
     height: 100vh;
-    background: rgba(0, 0, 0, 0.6);
-    /* Slightly darker for better focus */
+    background: rgba(24, 44, 30, 0.46);
     display: flex;
     align-items: center;
     justify-content: center;
     z-index: 200;
-    /* Ensure it's above the main calendar */
 }
 
 .modal {
-    background: white !important;
-    /* Forces solid background */
-    background-color: #ffffff;
-    border-radius: 8px;
+    background: linear-gradient(180deg, var(--app-surface) 0%, var(--app-surface-soft) 100%) !important;
+    border: 1px solid var(--app-border);
+    border-radius: 22px;
     width: 500px;
     max-height: 85vh;
     padding: 24px;
-    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
+    box-shadow: var(--app-shadow-lg);
     display: flex;
     flex-direction: column;
-    color: #3c4043;
+    color: var(--app-text);
 }
 
 .modal-body {
@@ -170,7 +167,6 @@ export default {
     padding-right: 5px;
 }
 
-/* UI Elements */
 .full-width {
     width: 100%;
     margin-bottom: 20px;
@@ -183,7 +179,7 @@ export default {
 .divider {
     margin: 20px 0;
     border: 0;
-    border-top: 1px solid #eee;
+    border-top: 1px solid var(--app-border);
 }
 
 .template-list {
@@ -197,14 +193,15 @@ export default {
     justify-content: space-between;
     align-items: center;
     padding: 14px;
-    border: 1px solid #e0e0e0;
+    border: 1px solid var(--app-border);
     margin-bottom: 10px;
-    border-radius: 6px;
+    border-radius: 16px;
     transition: background 0.2s;
+    background: var(--app-surface);
 }
 
 .template-list li:hover {
-    background: #f8f9fa;
+    background: var(--app-surface-soft);
 }
 
 .list-actions {
@@ -214,23 +211,23 @@ export default {
 }
 
 .apply-btn {
-    background: #34a853;
+    background: linear-gradient(135deg, var(--app-primary) 0%, var(--app-secondary) 100%);
     color: white;
-    border: none;
-    padding: 6px 16px;
-    border-radius: 4px;
+    border: 1px solid var(--app-primary-deep);
+    padding: 8px 16px;
+    border-radius: 12px;
     cursor: pointer;
-    font-weight: 500;
+    font-weight: 700;
 }
 
 .apply-btn:hover {
-    background: #2d9249;
+    filter: brightness(0.98);
 }
 
 .delete-icon {
     background: none;
     border: none;
-    color: #d93025;
+    color: var(--app-danger);
     cursor: pointer;
     display: flex;
     align-items: center;
@@ -241,13 +238,13 @@ header {
     justify-content: space-between;
     align-items: center;
     padding-bottom: 15px;
-    border-bottom: 1px solid #eee;
+    border-bottom: 1px solid var(--app-border);
 }
 
 h3 {
     margin: 0 0 15px 0;
     font-size: 16px;
-    color: #5f6368;
+    color: var(--app-text-soft);
     text-transform: uppercase;
     letter-spacing: 0.5px;
 }

@@ -208,16 +208,18 @@ export default {
 
 <style scoped>
 .tab-content {
-  padding: 0 20px 24px;
+  padding: 0 20px 28px;
 }
 
 h2 {
   margin: 0;
   font-size: 22px;
+  color: var(--app-text);
 }
 
 h3 {
   margin-bottom: 4px;
+  color: var(--app-text);
 }
 
 p {
@@ -235,12 +237,13 @@ p {
 .search-box {
   display: flex;
   align-items: center;
-  border: 1px solid #d9deea;
-  border-radius: 12px;
-  background: #f7f8fc;
+  border: 1px solid var(--app-border);
+  border-radius: 16px;
+  background: var(--app-surface);
   width: 100%;
   max-width: 420px;
   padding: 0 12px;
+  box-shadow: var(--app-shadow-sm);
 }
 
 .search-box input {
@@ -248,20 +251,22 @@ p {
   border: none;
   outline: none;
   background: transparent;
-  height: 44px;
+  color: var(--app-text);
+  height: 46px;
 }
 
 .cards-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
-  gap: 14px;
+  gap: 16px;
 }
 
 .card {
-  border: 1px solid #dce1ec;
-  border-radius: 14px;
-  background: #fff;
-  padding: 14px;
+  border: 1px solid var(--app-border);
+  border-radius: 20px;
+  background: linear-gradient(180deg, var(--app-surface) 0%, var(--app-surface-soft) 100%);
+  padding: 16px;
+  box-shadow: var(--app-shadow-sm);
 }
 
 .card p {
@@ -272,40 +277,43 @@ p {
 }
 
 .muted {
-  color: #617089;
+  color: var(--app-text-soft);
 }
 
 .icon-inline {
-  border: 1px solid #d5dae7;
-  background: #fff;
-  border-radius: 10px;
+  border: 1px solid var(--app-border);
+  background: var(--app-surface);
+  color: var(--app-text);
+  border-radius: 12px;
   width: 38px;
   height: 38px;
-  cursor: pointer;
+  box-shadow: 0 10px 18px rgba(36, 74, 46, 0.05);
 }
 
 .ghost-button,
 .primary-button {
-  border-radius: 12px;
-  padding: 11px 16px;
+  border-radius: 14px;
+  padding: 12px 18px;
   font-weight: 700;
-  border: 1px solid #d7dceb;
-  background: #fff;
+  border: 1px solid var(--app-border);
+  background: var(--app-surface);
+  color: var(--app-text);
   display: inline-flex;
   align-items: center;
   gap: 8px;
 }
 
 .primary-button {
-  border-color: #080c28;
-  background: #060828;
+  border-color: var(--app-primary-deep);
+  background: linear-gradient(135deg, var(--app-primary) 0%, var(--app-secondary) 100%);
   color: #fff;
+  box-shadow: 0 16px 28px rgba(47, 107, 63, 0.18);
 }
 
 .overlay {
   position: fixed;
   inset: 0;
-  background: rgba(22, 27, 39, 0.48);
+  background: rgba(24, 44, 30, 0.46);
   z-index: 12;
   display: flex;
   align-items: center;
@@ -316,11 +324,13 @@ p {
 .modal {
   width: 100%;
   max-width: 900px;
-  background: #fff;
-  border-radius: 18px;
-  padding: 22px;
+  background: linear-gradient(180deg, var(--app-surface) 0%, var(--app-surface-soft) 100%);
+  border: 1px solid var(--app-border);
+  border-radius: 24px;
+  padding: 24px;
   max-height: 94vh;
   overflow-y: auto;
+  box-shadow: var(--app-shadow-lg);
 }
 
 .modal.narrow {
@@ -335,22 +345,30 @@ p {
 }
 
 .modal label {
-  font-size: 20px;
+  font-size: 15px;
   font-weight: 700;
   margin-top: 10px;
   margin-bottom: 6px;
   display: inline-block;
+  color: var(--app-text);
 }
 
 .modal input {
   width: 100%;
-  border: none;
-  background: #f1f2f7;
-  border-radius: 12px;
-  min-height: 52px;
+  border: 1px solid var(--app-border);
+  background: var(--app-surface-soft);
+  border-radius: 16px;
+  min-height: 50px;
   padding: 11px 16px;
-  outline: none;
   margin-bottom: 6px;
+  color: var(--app-text);
+}
+
+.modal input:focus {
+  border-color: var(--app-primary);
+  background: var(--app-surface);
+  box-shadow: 0 0 0 4px rgba(79, 155, 88, 0.12);
+  outline: none;
 }
 
 .modal footer {
@@ -361,13 +379,14 @@ p {
 }
 
 .availability-row {
-  border: 1px solid #dce1ec;
-  border-radius: 12px;
-  padding: 10px 12px;
+  border: 1px solid var(--app-border);
+  border-radius: 16px;
+  padding: 12px 14px;
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 8px;
+  background: var(--app-surface);
 }
 
 .card-actions {
@@ -386,17 +405,16 @@ p {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #fff1f1;
-  border: 1px solid #ffcccc;
-  border-radius: 12px;
+  background: var(--app-danger-bg);
+  border: 1px solid var(--app-danger-border);
+  border-radius: 14px;
   width: 44px;
   height: 44px;
-  cursor: pointer;
 }
 
 .delete-icon-btn:hover {
-  background: #ffe0e0;
-  border-color: #ffb3b3;
+  background: #ffe8e8;
+  border-color: #e6aaaa;
 }
 
 @media (max-width: 980px) {

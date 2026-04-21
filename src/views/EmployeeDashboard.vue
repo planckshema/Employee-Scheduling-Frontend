@@ -117,39 +117,41 @@ export default {
 .dashboard-page {
   min-height: 100vh;
   background:
-    radial-gradient(circle at top left, rgba(88, 126, 255, 0.12), transparent 22%),
-    linear-gradient(180deg, #f6f8fc 0%, #edf2f8 100%);
-  color: #151d2d;
-  padding: 18px 28px 0;
+    radial-gradient(circle at top left, rgba(123, 201, 111, 0.14), transparent 22%),
+    linear-gradient(180deg, #f8fcf7 0%, var(--app-bg) 100%);
+  color: var(--app-text);
+  padding: 20px 28px 0;
 }
 
 .dashboard-shell {
   max-width: 1380px;
   margin: 0 auto 18px;
-  border: 1px solid rgba(220, 225, 236, 0.92);
-  border-radius: 28px;
-  background: rgba(255, 255, 255, 0.88);
-  box-shadow: 0 18px 40px rgba(28, 39, 64, 0.06);
+  border: 1px solid var(--app-border);
+  border-radius: 30px;
+  background: rgba(255, 254, 251, 0.92);
+  box-shadow: var(--app-shadow-md);
   overflow: hidden;
-  backdrop-filter: blur(8px);
+  backdrop-filter: blur(10px);
 }
 
 .header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 24px 28px 18px;
+  padding: 28px 30px 18px;
 }
 
 h1 {
   margin: 0;
   font-size: 44px;
   line-height: 1;
+  letter-spacing: -0.04em;
 }
 
 .title-block p {
   margin: 0;
-  color: #607089;
+  color: var(--app-text-soft);
+  line-height: 1.6;
 }
 
 .eyebrow {
@@ -158,46 +160,47 @@ h1 {
   letter-spacing: 0.08em;
   font-size: 12px;
   font-weight: 800;
-  color: #3359c9;
+  color: var(--app-secondary);
 }
 
 .tabs {
   display: flex;
-  gap: 6px;
-  padding: 0 22px 22px;
-  border-top: 1px solid rgba(229, 232, 239, 0.9);
-  padding-top: 14px;
+  gap: 8px;
+  padding: 16px 22px 22px;
+  border-top: 1px solid rgba(184, 207, 180, 0.58);
   flex-wrap: wrap;
 }
 
 .tab {
-  border: none;
-  background: rgba(232, 235, 242, 0.75);
-  padding: 10px 15px;
-  border-radius: 14px;
+  border: 1px solid transparent;
+  background: rgba(235, 244, 233, 0.9);
+  color: var(--app-text-soft);
+  padding: 11px 16px;
+  border-radius: 16px;
   font-weight: 700;
   display: flex;
   align-items: center;
   gap: 8px;
-  cursor: pointer;
 }
 
 .tab.active {
-  background: #fff;
-  box-shadow: 0 6px 18px rgba(32, 43, 71, 0.08);
-  border: 1px solid rgba(220, 225, 236, 0.95);
+  background: var(--app-surface);
+  color: var(--app-primary);
+  box-shadow: 0 12px 24px rgba(36, 74, 46, 0.08);
+  border-color: var(--app-border);
 }
 
 .ghost-button {
-  border-radius: 12px;
-  padding: 11px 16px;
+  border-radius: 14px;
+  padding: 12px 18px;
   font-weight: 700;
-  border: 1px solid #d7dceb;
-  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid var(--app-border);
+  background: rgba(255, 254, 251, 0.94);
+  color: var(--app-text);
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  box-shadow: 0 10px 24px rgba(23, 27, 37, 0.05);
+  box-shadow: 0 14px 26px rgba(36, 74, 46, 0.06);
 }
 
 @media (max-width: 980px) {
