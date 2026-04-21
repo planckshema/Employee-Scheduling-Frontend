@@ -85,7 +85,7 @@
                   :key="shift.shiftId"
                   :class="[
                     'shift-card',
-                    { unassigned: !shift.employeeName, flagged: hasAvailabilityConflict(shift) },
+                    { unassigned: !shift.EmployeeID, flagged: hasAvailabilityConflict(shift) },
                   ]"
                   @click="openEditShiftDialog(shift)"
                 >
@@ -102,8 +102,8 @@
                     <span>{{ shift.startTime }} - {{ shift.endTime }}</span>
                   </div>
 
-                  <p :class="['shift-assignee', { missing: !shift.employeeName }]">
-                    {{ shift.employeeName || "Unassigned employee" }}
+                  <p :class="['shift-assignee', { missing: !shift.EmployeeID }]">
+                    {{ shift.EmployeeID ? shift.employeeName : "Unassigned employee" }}
                   </p>
 
                   <p v-if="hasAvailabilityConflict(shift)" class="shift-flag">
@@ -448,7 +448,7 @@ export default {
       ).sort((a, b) => toMinutes(a.startTime) - toMinutes(b.startTime));
     },
     unassignedShiftCount() {
-      return this.shiftsForCurrentWeek.filter((shift) => !shift.employeeName).length;
+      return this.shiftsForCurrentWeek.filter((shift) => !shift.EmployeeID).length;
     },
     availabilityConflictCount() {
       return this.shiftsForCurrentWeek.filter((shift) => this.hasAvailabilityConflict(shift)).length;

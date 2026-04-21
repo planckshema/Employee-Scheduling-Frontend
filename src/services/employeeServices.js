@@ -31,19 +31,19 @@ export default {
   },
 
   getTodayShift(userId) {
-    return apiClient.get(`/employee/timeclock/users/${userId}/shift/today`);
+    return apiClient.get(`/employee/dashboard/users/${userId}/today-shift`);
   },
 
   getTimeClockStatus(userId, shiftId) {
-    return apiClient.get(`/employee/timeclock/users/${userId}/shifts/${shiftId}`);
+    return apiClient.get(`/employee/dashboard/users/${userId}/timeclock/${shiftId}`);
   },
 
   clockIn(userId, shiftId) {
-    return apiClient.post(`/employee/timeclock/users/${userId}/shifts/${shiftId}/clock-in`);
+    return apiClient.post(`/employee/dashboard/users/${userId}/timeclock/${shiftId}/clock-in`);
   },
 
   clockOut(userId, shiftId) {
-    return apiClient.post(`/employee/timeclock/users/${userId}/shifts/${shiftId}/clock-out`);
+    return apiClient.post(`/employee/dashboard/users/${userId}/timeclock/${shiftId}/clock-out`);
   },
 
   updateEmployeeAvailability(userId, weeklyAvailability) {
