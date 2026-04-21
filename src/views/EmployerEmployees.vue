@@ -89,6 +89,25 @@
         </article>
       </section>
     </div>
+    <div v-if="deleteDialog" class="overlay">
+  <section class="modal narrow">
+    <header>
+      <h2>Delete Employee</h2>
+      <button class="icon-inline" @click="deleteDialog = false">
+        <v-icon>mdi-close</v-icon>
+      </button>
+    </header>
+    <p style="color: #617089; margin-bottom: 20px;">
+      Are you sure you want to delete this employee? This cannot be undone.
+    </p>
+    <footer>
+      <button class="ghost-button" @click="deleteDialog = false">Cancel</button>
+      <button class="primary-button" style="background: #dc2626; border-color: #dc2626;" @click="confirmDelete">
+        Delete
+      </button>
+    </footer>
+  </section>
+</div>
   </section>
 </template>
 
@@ -119,6 +138,8 @@ export default {
         { day: "Saturday", time: "Not available" },
         { day: "Sunday", time: "Not available" },
       ],
+      deleteDialog: false,
+      deletingEmployeeId: null,
     };
   },
   computed: {
@@ -193,18 +214,22 @@ export default {
     });
 },
     deleteEmployee(id) {
-      if (!id || !window.confirm("Delete this employee?")) {
-        return;
-      }
+  if (!id) return;
+  this.deletingEmployeeId = id;
+  this.deleteDialog = true;
+},
 
-      SchedulerServices.deleteEmployee(id)
-        .then(() => {
-          this.fetchEmployees();
-        })
-        .catch((error) => {
-          console.log("error", error);
-        });
-    },
+confirmDelete() {
+  SchedulerServices.deleteEmployee(this.deletingEmployeeId)
+    .then(() => {
+      this.deleteDialog = false;
+      this.deletingEmployeeId = null;
+      this.fetchEmployees();
+    })
+    .catch((error) => {
+      console.log("error", error);
+    });
+},
     openAvailability(employee) {
       this.selectedEmployee = employee;
       this.availabilityDialog = true;
