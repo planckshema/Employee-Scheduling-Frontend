@@ -53,17 +53,75 @@
         <span>Availability Flags</span>
         <strong>{{ availabilityConflictCount }}</strong>
       </article>
+      <article class="summary-card" :class="{ 'pending-card': pendingTrades > 0 }"
+        @click="$router.push('/employer/trades')" style="cursor: pointer;">
+        <span>Pending Trades</span>
+        <strong>{{ pendingTrades }}</strong>
+      </article>
       <article class="summary-card">
         <span>Business Type</span>
         <strong>{{ businessLabel }}</strong>
       </article>
     </section>
 
-    <div class="calendar-container">
-      <FullCalendar
-        ref="calendarRef"
-        :options="calendarOptions"
-      />
+    <div class="schedule-table-wrap">
+      <table class="schedule-table">
+        <thead>
+          <tr>
+            <th class="time-header">Time</th>
+            <th v-for="day in weekDays" :key="day.isoDate">
+              {{ day.label }}<br />{{ day.shortDate }}
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="slot in timeSlots" :key="slot.key">
+            <td class="time-cell">
+              <strong>{{ slot.label }}</strong>
+              <button class="mini-add-button" @click="openNewShiftDialog(null, slot)">
+                <v-icon size="16">mdi-plus</v-icon>
+              </button>
+            </td>
+
+            <td v-for="day in weekDays" :key="`${slot.key}-${day.isoDate}`" class="slot-cell">
+              <div class="cell-actions">
+                <button class="cell-add-button" @click="openNewShiftDialog(day.isoDate, slot)">
+                  <v-icon size="14">mdi-plus</v-icon>
+                  Add
+                </button>
+              </div>
+
+              <div v-if="getShiftsForSlot(day.isoDate, slot).length" class="shift-stack">
+                <article v-for="shift in getShiftsForSlot(day.isoDate, slot)" :key="shift.shiftId" :class="[
+                  'shift-card',
+                  { unassigned: !shift.employeeName, flagged: hasAvailabilityConflict(shift) },
+                ]" @click="openEditShiftDialog(shift)">
+                  <button class="shift-delete" title="Delete shift" @click.stop="deleteShift(shift.shiftId)">
+                    <v-icon size="14">mdi-close</v-icon>
+                  </button>
+
+                  <div class="shift-header">
+                    <strong>{{ shift.position || "Shift" }}</strong>
+                    <span>{{ shift.startTime }} - {{ shift.endTime }}</span>
+                  </div>
+
+                  <p :class="['shift-assignee', { missing: !shift.employeeName }]">
+                    {{ shift.employeeName || "Unassigned employee" }}
+                  </p>
+
+                  <p v-if="hasAvailabilityConflict(shift)" class="shift-flag">
+                    Outside employee availability
+                  </p>
+                </article>
+              </div>
+
+              <div v-else class="empty-slot">
+                <span>No shift planned</span>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
     </div>
 
     <div v-if="newShiftDialog" class="overlay">
@@ -118,11 +176,7 @@
         </select>
 
         <footer>
-          <button type="button"
-            v-if="editingShiftId"
-            class="ghost-button danger-button footer-left"
-            @click="deleteEditingShift"
-          >
+          <button v-if="editingShiftId" class="ghost-button danger-button footer-left" @click="deleteEditingShift">
             Delete Shift
           </button>
           <button type="button" class="ghost-button" @click="closeShiftDialog">Cancel</button>
@@ -159,7 +213,8 @@
         </p>
 
         <p class="muted modal-copy">
-          Save this week's shifts as a reusable schedule template. Each week can be saved once.
+          Generated suggestions use employee availability, your business hours, and your business type to prefill a
+          workable draft.
         </p>
 
         <div v-if="templates.length" class="template-list">
@@ -218,7 +273,7 @@ import interactionPlugin from '@fullcalendar/interaction'
 import EmployerServices from "@/services/employerServices";
 import SchedulerServices from "@/services/schedulerServices";
 import TemplateServices from "@/services/templateServices";
-import SchoolServices from "@/services/schoolServices";
+import TradeService from "../services/tradeServices.js"
 
 const dayKeys = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
 const POSITION_LIBRARY = [
@@ -334,11 +389,11 @@ const buildDefaultSlots = (startMinutes = DEFAULT_START_MINUTES, endMinutes = DE
 const normalizeAvailability = (availability) =>
   Array.isArray(availability)
     ? availability.map((row) => ({
-        dayKey: row.dayKey,
-        available: Boolean(row.available),
-        startTime: row.startTime || "",
-        endTime: row.endTime || "",
-      }))
+      dayKey: row.dayKey,
+      available: Boolean(row.available),
+      startTime: row.startTime || "",
+      endTime: row.endTime || "",
+    }))
     : [];
 
 const extractPositionOptions = (niche) => {
@@ -439,6 +494,7 @@ export default defineComponent({
   data() {
     const monday = startOfWeekMonday(new Date());
     return {
+      pendingTrades: 0,
       newShiftDialog: false,
       templateDialog: false,
       currentWeekStart: monday,
@@ -654,6 +710,7 @@ export default defineComponent({
         this.fetchEmployerProfile(),
         this.fetchTaskLists(),
         this.fetchShifts(),
+        this.getDashboardFlags(),
       ]);
     },
     mapEmployee(row) {
@@ -1273,80 +1330,18 @@ export default defineComponent({
         console.log("error", error);
       }
     },
-    handleDateSelect(selectInfo) {
-      // Create new shift from selected time slot
-      const start = new Date(selectInfo.start);
-      const end = new Date(selectInfo.end);
-      this.newShift = {
-        employeeId: "",
-        position: this.positionOptions[0] || "",
-        date: toIsoDate(start),
-        startTime: start.toTimeString().slice(0, 5),
-        endTime: end.toTimeString().slice(0, 5),
-        taskListId: null,
-      };
-      this.newShiftDialog = true;
-      selectInfo.view.calendar.unselect();
-    },
-    handleEventClick(clickInfo) {
-      const shift = clickInfo.event.extendedProps.shift;
-      this.openEditShiftDialog(shift);
-    },
-    async handleEventDrop(dropInfo) {
-      const shift = dropInfo.event.extendedProps.shift;
-      const newStart = new Date(dropInfo.event.start);
-      const newEnd = new Date(dropInfo.event.end);
-      
-      const payload = {
-        date: toIsoDate(newStart),
-        startTime: newStart.toTimeString().slice(0, 5),
-        endTime: newEnd.toTimeString().slice(0, 5),
-        position: shift.position,
-        taskListId: shift.taskListId,
-        EmployeeID: shift.EmployeeID,
-        employeeName: shift.employeeName,
-      };
-
+    async getDashboardFlags() {
       try {
-        await SchedulerServices.updateShift(shift.shiftId, payload);
-        await this.fetchShifts();
-        this.successMessage = "Shift updated successfully.";
+        const response = await TradeService.getPendingCount();
+        // Ensure "TradeService" is imported at the top of your <script>
+        this.pendingTrades = response.data.pendingCount;
       } catch (error) {
-        console.log("error", error);
-        dropInfo.revert();
+        console.error("Could not fetch trade flags:", error);
       }
-    },
-    async handleEventResize(resizeInfo) {
-      const shift = resizeInfo.event.extendedProps.shift;
-      const newEnd = new Date(resizeInfo.event.end);
-      
-      const payload = {
-        date: shift.date,
-        startTime: shift.startTime,
-        endTime: newEnd.toTimeString().slice(0, 5),
-        position: shift.position,
-        taskListId: shift.taskListId,
-        EmployeeID: shift.EmployeeID,
-        employeeName: shift.employeeName,
-      };
-
-      try {
-        await SchedulerServices.updateShift(shift.shiftId, payload);
-        await this.fetchShifts();
-        this.successMessage = "Shift duration updated successfully.";
-      } catch (error) {
-        console.log("error", error);
-        resizeInfo.revert();
-      }
-    },
-    handleEventMouseEnter(mouseEnterInfo) {
-      // Optional: Add hover effects
-    },
-    handleEventMouseLeave(mouseLeaveInfo) {
-      // Optional: Remove hover effects
     },
   },
-})
+
+};
 </script>
 
 <style scoped>
@@ -1438,6 +1433,13 @@ p {
   display: grid;
   gap: 6px;
   box-shadow: 0 12px 28px rgba(30, 41, 65, 0.05);
+  transition: transform 0.2s;
+}
+
+/* Hover effect since it's now a link */
+.summary-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
 .summary-card span {
@@ -1449,6 +1451,18 @@ p {
 
 .summary-card strong {
   font-size: 24px;
+}
+
+/* The "Flag" state when trades > 0 */
+.pending-card {
+  border-left: 5px solid #fb8c00;
+  /* Orange flag */
+  background-color: #fff3e0;
+  /* Light orange tint */
+}
+
+.pending-card strong {
+  color: #ef6c00;
 }
 
 .warning-card {

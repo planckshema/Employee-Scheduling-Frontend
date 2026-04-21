@@ -11,11 +11,17 @@ export default {
     getAvailableShifts() {
         return apiClient.get("/tradeRequestShifts/available");
     },
+    getPendingCount() {
+        return apiClient.get("/tradeRequestShifts/pending-count");
+    },
     claimTrade(id, data) {
         return apiClient.put(`/tradeRequestShifts/${id}/claim`, data);
     },
     approveTrade(id) {
         return apiClient.post(`/tradeRequestShifts/${id}/approve`);
+    },
+    declineTrade(id) {
+        return apiClient.put(`/tradeRequestShifts/${id}/decline`);
     },
     deleteTrade(id) {
         return apiClient.delete(`/tradeRequestShifts/${id}`);
