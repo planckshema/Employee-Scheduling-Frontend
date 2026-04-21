@@ -16,7 +16,11 @@
         <button v-for="tab in tabs" :key="tab.key" :class="['tab', { active: currentTab === tab.key }]"
           @click="$router.push({ name: tab.routeName })">
           <v-icon size="18">{{ tab.icon }}</v-icon>
-          {{ tab.label }}
+          <span>{{ tab.label }}</span>
+          <span v-if="tab.key === 'trades' && tradeboardAttentionCount > 0" class="tab-indicator"
+            :title="tradeboardIndicatorTitle">
+            {{ tradeboardAttentionCount }}
+          </span>
         </button>
       </nav>
     </section>
@@ -27,12 +31,15 @@
 
 <script>
 import EmployerServices from "@/services/employerServices";
+import TradeService from "@/services/tradeServices";
 
 export default {
   name: "EmployerDashboard",
   data() {
     return {
       employerProfile: null,
+      tradeboardAttentionCount: 0,
+      tradeboardRefreshHandle: null,
       tabs: [
         {
           key: "schedule",
@@ -80,6 +87,12 @@ export default {
         ? `Manage schedules and staffing for your ${niche.toLowerCase()}.`
         : "Manage your team's schedule";
     },
+    tradeboardIndicatorTitle() {
+      const count = this.tradeboardAttentionCount;
+      return count === 1
+        ? "1 trade board item needs attention"
+        : `${count} trade board items need attention`;
+    },
     currentTab() {
       const map = {
         employerSchedule: "schedule",
@@ -104,6 +117,40 @@ export default {
         this.employerProfile = null;
       }
     }
+
+    await this.loadTradeboardAttentionCount();
+  },
+  mounted() {
+    window.addEventListener("focus", this.loadTradeboardAttentionCount);
+    this.tradeboardRefreshHandle = window.setInterval(this.loadTradeboardAttentionCount, 60000);
+  },
+  beforeUnmount() {
+    window.removeEventListener("focus", this.loadTradeboardAttentionCount);
+    if (this.tradeboardRefreshHandle) {
+      window.clearInterval(this.tradeboardRefreshHandle);
+      this.tradeboardRefreshHandle = null;
+    }
+  },
+  watch: {
+    "$route.name"() {
+      this.loadTradeboardAttentionCount();
+    },
+  },
+  methods: {
+    async loadTradeboardAttentionCount() {
+      try {
+        const { data } = await TradeService.getPendingCount();
+        const pendingCount = Number(data?.pendingCount || 0);
+        const availableCount = Number(data?.availableCount || 0);
+        const attentionCount = Number.isFinite(Number(data?.attentionCount))
+          ? Number(data.attentionCount)
+          : pendingCount + availableCount;
+
+        this.tradeboardAttentionCount = Math.max(0, attentionCount);
+      } catch (error) {
+        this.tradeboardAttentionCount = 0;
+      }
+    },
   },
 };
 </script>
@@ -175,6 +222,21 @@ h1 {
   align-items: center;
   gap: 8px;
   cursor: pointer;
+}
+
+.tab-indicator {
+  min-width: 22px;
+  height: 22px;
+  padding: 0 7px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #c83c31;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1;
 }
 
 .tab.active {
