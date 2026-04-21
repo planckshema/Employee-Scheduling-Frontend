@@ -47,6 +47,12 @@ export default {
           routeName: "employerEmployees",
         },
         {
+          key: "timecards",
+          label: "Timecards",
+          icon: "mdi-timer-check-outline",
+          routeName: "employerTimecards",
+        },
+        {
           key: "trades", // New Key
           label: "Trade Board",
           icon: "mdi-swap-horizontal", // New Icon
@@ -84,6 +90,7 @@ export default {
       const map = {
         employerSchedule: "schedule",
         employerEmployees: "employees",
+        employerTimecards: "timecards",
         tradeRequestShifts: "trades",
         employerTaskLists: "taskLists",
         employerSettings: "settings",

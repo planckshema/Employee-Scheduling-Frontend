@@ -18,6 +18,8 @@ import Utils from "./config/utils.js";
 import EmployerTradeboard from "./views/EmployerTradeboard.vue";
 import AdminLogin from "./views/AdminLogin.vue";
 import AdminDashboard from "./views/AdminDashboard.vue";
+import EmployeeTimeClock from "./views/EmployeeTimeClock.vue";
+import EmployerTimecards from "./views/EmployerTimecards.vue";
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -47,16 +49,19 @@ const router = createRouter({
     {
       path: "/onboarding/employer",
       name: "employerCreateProfile",
+      meta: { appRole: "employer" },
       component: EmployerCreateProfile,
     },
     {
       path: "/onboarding/employee",
       name: "employeeCreateProfile",
+      meta: { appRole: "employee" },
       component: EmployeeCreateProfile,
     },
     {
       path: "/employer",
       name: "employerDashboard",
+      meta: { appRole: "employer" },
       component: EmployerDashboard,
       redirect: { name: "employerSchedule" },
       children: [
@@ -69,6 +74,11 @@ const router = createRouter({
           path: "employees",
           name: "employerEmployees",
           component: EmployerEmployees,
+        },
+        {
+          path: "timecards",
+          name: "employerTimecards",
+          component: EmployerTimecards,
         },
         {
           path: "trades",
@@ -90,6 +100,7 @@ const router = createRouter({
     {
       path: "/employee",
       name: "employeeDashboard",
+      meta: { appRole: "employee" },
       component: EmployeeDashboard,
       redirect: { name: "employeeSchedule" },
       children: [
@@ -113,6 +124,11 @@ const router = createRouter({
           name: "employeeSettings",
           component: EmployeeSettings,
         },
+        {
+          path: "timeclock",
+          name: "employeeTimeClock",
+          component: EmployeeTimeClock,
+        },
       ],
     },
   ],
@@ -122,12 +138,11 @@ router.beforeEach((to, from, next) => {
   const user = Utils.getStore("user");
   const isLoggedIn = Boolean(user && user.token);
 
-  if (to.name !== "login" && !isLoggedIn) {
   // 1. Always allow access to login pages
   if (to.name === "adminLogin" || to.name === "login") {
-    // If already logged in, skip login and go to roles (or dashboard)
+    // If already logged in, skip login and go to the best landing route.
     if (isLoggedIn) {
-      next(user.isAdmin ? { name: "adminDashboard" } : { name: "roleSelection" });
+      next(Utils.getDefaultRouteForUser(user));
     } else {
       next();
     }
@@ -140,10 +155,25 @@ router.beforeEach((to, from, next) => {
   } else {
     // 3. Optional: Prevent workers from manualy typing /adminDashboard in the URL
     if (to.name === "adminDashboard" && !user.isAdmin) {
-      next({ name: "roleSelection" });
+      next(Utils.getDefaultRouteForUser(user));
     } else {
       next();
     }
+  }
+});
+
+router.afterEach((to) => {
+  const user = Utils.getStore("user");
+
+  if (!user?.token || user.isAdmin) {
+    return;
+  }
+
+  const selectedRole = to.matched.find((record) => record.meta?.appRole)?.meta
+    ?.appRole;
+
+  if (selectedRole) {
+    Utils.setLastSelectedRole(user.userId, selectedRole);
   }
 });
 

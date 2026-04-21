@@ -62,6 +62,12 @@ export default {
           icon: "mdi-cog-outline",
           routeName: "employeeSettings",
         },
+        {
+          key: "timeclock",
+          label: "Clock In/Clock Out",
+          icon: "mdi-timer-outline",
+          routeName: "employeeTimeClock",
+        },
       ],
     };
   },
@@ -91,7 +97,9 @@ export default {
         employeeSchedule: "schedule",
         employeeAvailability: "availability",
         employeeTradeboard: "tradeboard",
+        employeeTimeClock: "timeclock",
         employeeSettings: "settings",
+
       };
       return map[this.$route.name] || "schedule";
     },
