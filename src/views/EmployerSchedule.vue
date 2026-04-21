@@ -64,73 +64,11 @@
       </article>
     </section>
 
-    <div class="schedule-table-wrap">
-      <table class="schedule-table">
-        <thead>
-          <tr>
-            <th class="time-header">Time</th>
-            <th v-for="day in weekDays" :key="day.isoDate">
-              {{ day.label }}<br />{{ day.shortDate }}
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="slot in timeSlots" :key="slot.key">
-            <td class="time-cell">
-              <strong>{{ slot.label }}</strong>
-              <button class="mini-add-button" @click="openNewShiftDialog(null, slot)">
-                <v-icon size="16">mdi-plus</v-icon>
-              </button>
-            </td>
-
-            <td v-for="day in weekDays" :key="`${slot.key}-${day.isoDate}`" class="slot-cell">
-              <div class="cell-actions">
-                <button class="cell-add-button" @click="openNewShiftDialog(day.isoDate, slot)">
-                  <v-icon size="14">mdi-plus</v-icon>
-                  Add
-                </button>
-              </div>
-
-              <div v-if="getShiftsForSlot(day.isoDate, slot).length" class="shift-stack">
-                <article
-                  v-for="shift in getShiftsForSlot(day.isoDate, slot)"
-                  :key="shift.shiftId"
-                  :class="[
-                    'shift-card',
-                    { unassigned: !shift.EmployeeID, flagged: hasAvailabilityConflict(shift) },
-                  ]"
-                  @click="openEditShiftDialog(shift)"
-                >
-                  <button
-                    class="shift-delete"
-                    title="Delete shift"
-                    @click.stop="deleteShift(shift.shiftId)"
-                  >
-                    <v-icon size="14">mdi-close</v-icon>
-                  </button>
-
-                  <div class="shift-header">
-                    <strong>{{ shift.position || "Shift" }}</strong>
-                    <span>{{ shift.startTime }} - {{ shift.endTime }}</span>
-                  </div>
-
-                  <p :class="['shift-assignee', { missing: !shift.EmployeeID }]">
-                    {{ shift.EmployeeID ? shift.employeeName : "Unassigned employee" }}
-                  </p>
-
-                  <p v-if="hasAvailabilityConflict(shift)" class="shift-flag">
-                    Outside employee availability
-                  </p>
-                </article>
-              </div>
-
-              <div v-else class="empty-slot">
-                <span>No shift planned</span>
-              </div>
-            </td>
-          </tr>
-        </tbody>
-      </table>
+    <div class="calendar-container">
+      <FullCalendar
+        ref="calendarRef"
+        :options="calendarOptions"
+      />
     </div>
 
     <div v-if="newShiftDialog" class="overlay">
@@ -1338,6 +1276,82 @@ export default defineComponent({
       } catch (error) {
         console.log("error", error);
       }
+    },
+    handleDateSelect(selectInfo) {
+      const start = new Date(selectInfo.start);
+      const end = new Date(selectInfo.end);
+
+      this.newShift = {
+        employeeId: "",
+        position: this.positionOptions[0] || "",
+        date: toIsoDate(start),
+        startTime: start.toTimeString().slice(0, 5),
+        endTime: end.toTimeString().slice(0, 5),
+        taskListId: null,
+      };
+      this.editingShiftId = null;
+      this.warningMessage = "";
+      this.newShiftDialog = true;
+      selectInfo.view.calendar.unselect();
+    },
+    handleEventClick(clickInfo) {
+      const shift = clickInfo.event.extendedProps.shift;
+      if (shift) {
+        this.openEditShiftDialog(shift);
+      }
+    },
+    async handleEventDrop(dropInfo) {
+      const shift = dropInfo.event.extendedProps.shift;
+      const newStart = new Date(dropInfo.event.start);
+      const newEnd = new Date(dropInfo.event.end);
+
+      const payload = {
+        date: toIsoDate(newStart),
+        startTime: newStart.toTimeString().slice(0, 5),
+        endTime: newEnd.toTimeString().slice(0, 5),
+        position: shift.position,
+        taskListId: shift.taskListId || null,
+        EmployeeID: shift.EmployeeID,
+        employeeName: shift.employeeName,
+      };
+
+      try {
+        await SchedulerServices.updateShift(shift.shiftId, payload);
+        await this.fetchShifts();
+        this.successMessage = "Shift updated successfully.";
+      } catch (error) {
+        console.log("error", error);
+        dropInfo.revert();
+      }
+    },
+    async handleEventResize(resizeInfo) {
+      const shift = resizeInfo.event.extendedProps.shift;
+      const newEnd = new Date(resizeInfo.event.end);
+
+      const payload = {
+        date: shift.date,
+        startTime: shift.startTime,
+        endTime: newEnd.toTimeString().slice(0, 5),
+        position: shift.position,
+        taskListId: shift.taskListId || null,
+        EmployeeID: shift.EmployeeID,
+        employeeName: shift.employeeName,
+      };
+
+      try {
+        await SchedulerServices.updateShift(shift.shiftId, payload);
+        await this.fetchShifts();
+        this.successMessage = "Shift duration updated successfully.";
+      } catch (error) {
+        console.log("error", error);
+        resizeInfo.revert();
+      }
+    },
+    handleEventMouseEnter() {
+      // Reserved for future hover behavior.
+    },
+    handleEventMouseLeave() {
+      // Reserved for future hover behavior.
     },
     async getDashboardFlags() {
       try {
