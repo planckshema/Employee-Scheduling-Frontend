@@ -11,7 +11,7 @@
         </header>
 
         <div v-if="trades.length === 0" class="empty-state">
-            <v-icon size="64" color="#e0e0e0">mdi-swap-horizontal</v-icon>
+            <v-icon size="64" color="secondary">mdi-swap-horizontal</v-icon>
             <p>No active trades on the board.</p>
         </div>
 
@@ -78,8 +78,8 @@
 
                 <v-card-actions>
                     <v-spacer></v-spacer>
-                    <v-btn color="grey darken-1" text @click="closeAddModal">Cancel</v-btn>
-                    <v-btn color="black" dark :disabled="!selectedShift" @click="submitTradeToBoard">
+                    <v-btn variant="text" @click="closeAddModal">Cancel</v-btn>
+                    <v-btn color="primary" :disabled="!selectedShift" @click="submitTradeToBoard">
                         Post to Board
                     </v-btn>
                 </v-card-actions>
@@ -91,8 +91,8 @@
                 <v-card-text>{{ confirmDialog.message }}</v-card-text>
                 <v-card-actions>
                     <v-spacer></v-spacer>
-                    <v-btn color="grey" text @click="confirmDialog.show = false">Cancel</v-btn>
-                    <v-btn color="primary" text @click="executeConfirmedAction">Confirm</v-btn>
+                    <v-btn variant="text" @click="confirmDialog.show = false">Cancel</v-btn>
+                    <v-btn color="primary" variant="text" @click="executeConfirmedAction">Confirm</v-btn>
                 </v-card-actions>
             </v-card>
         </v-dialog>
@@ -249,47 +249,54 @@ export default {
 
 <style scoped>
 .trade-board-container {
-    padding: 24px;
-    max-width: 1000px;
+    padding: 0 28px 32px;
+    max-width: 1380px;
     margin: 0 auto;
-    font-family: sans-serif;
+    color: var(--app-text);
 }
 
 .board-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 32px;
+    margin-bottom: 20px;
+    padding: 22px 24px;
+    border: 1px solid var(--app-border);
+    border-radius: 24px;
+    background: linear-gradient(180deg, var(--app-surface) 0%, rgba(236, 248, 238, 0.82) 100%);
+    box-shadow: var(--app-shadow-sm);
 }
 
 .header-text h1 {
-    font-size: 24px;
+    font-size: 32px;
     margin-bottom: 4px;
+    letter-spacing: -0.03em;
 }
 
 .header-text p {
-    color: #666;
+    color: var(--app-text-soft);
 }
 
 .add-button {
-    background: #000;
+    background: linear-gradient(135deg, var(--app-primary) 0%, var(--app-secondary) 100%);
     color: #fff;
-    padding: 10px 20px;
-    border-radius: 8px;
-    font-weight: 600;
-    border: none;
-    cursor: pointer;
+    padding: 12px 20px;
+    border-radius: 14px;
+    font-weight: 700;
+    border: 1px solid var(--app-primary-deep);
     display: flex;
     align-items: center;
+    gap: 8px;
+    box-shadow: 0 18px 28px rgba(47, 107, 63, 0.18);
 }
 
 .trade-card {
-    background: #fff;
-    border: 1px solid #eee;
-    border-radius: 12px;
+    background: linear-gradient(180deg, var(--app-surface) 0%, var(--app-surface-soft) 100%);
+    border: 1px solid var(--app-border);
+    border-radius: 22px;
     padding: 24px;
     margin-bottom: 16px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+    box-shadow: var(--app-shadow-sm);
 }
 
 .card-top {
@@ -300,74 +307,80 @@ export default {
 
 .position-title {
     font-size: 18px;
-    font-weight: 700;
+    font-weight: 800;
     margin-right: 12px;
 }
 
 .status-badge {
-    padding: 4px 10px;
-    border-radius: 6px;
+    padding: 6px 10px;
+    border-radius: 999px;
     font-size: 12px;
     font-weight: 700;
     text-transform: uppercase;
 }
 
 .status-badge.available {
-    background: #e8f5e9;
-    color: #2e7d32;
+    background: rgba(123, 201, 111, 0.18);
+    color: var(--app-primary);
 }
 
 .status-badge.pending {
-    background: #fff3e0;
-    color: #ef6c00;
+    background: var(--app-warning-bg);
+    color: #a37218;
 }
 
 .details-row {
     display: flex;
     gap: 24px;
     margin: 12px 0;
-    color: #555;
+    color: var(--app-text-soft);
     font-size: 14px;
+    flex-wrap: wrap;
 }
 
 .posted-date {
-    color: #999;
+    color: var(--app-text-faint);
     font-size: 12px;
 }
 
 .remove-btn {
-    border: 1px solid #ddd;
-    padding: 6px 14px;
-    border-radius: 6px;
-    background: #fff;
-    cursor: pointer;
+    border: 1px solid var(--app-border);
+    padding: 9px 14px;
+    border-radius: 12px;
+    background: var(--app-surface);
+    color: var(--app-text);
     font-size: 13px;
+    font-weight: 700;
 }
 
 .requests-section {
     margin-top: 20px;
     padding-top: 20px;
-    border-top: 1px solid #f5f5f5;
+    border-top: 1px solid var(--app-border);
 }
 
 .requests-section h4 {
     margin-bottom: 12px;
     font-size: 14px;
-    color: #333;
+    color: var(--app-text);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
 }
 
 .request-item {
-    background: #f9f9f9;
+    background: rgba(236, 248, 238, 0.6);
+    border: 1px solid rgba(79, 155, 88, 0.16);
     padding: 16px;
-    border-radius: 8px;
+    border-radius: 18px;
     display: flex;
     justify-content: space-between;
     align-items: center;
+    gap: 12px;
 }
 
 .request-msg {
     font-size: 14px;
-    color: #666;
+    color: var(--app-text-soft);
     margin-top: 4px;
 }
 
@@ -377,27 +390,46 @@ export default {
 }
 
 .accept-btn {
-    background: #34a853;
+    background: linear-gradient(135deg, var(--app-primary) 0%, var(--app-secondary) 100%);
     color: #fff;
-    border: none;
-    padding: 8px 16px;
-    border-radius: 6px;
-    cursor: pointer;
-    font-weight: 600;
+    border: 1px solid var(--app-primary-deep);
+    padding: 10px 16px;
+    border-radius: 12px;
+    font-weight: 700;
 }
 
 .decline-btn {
-    background: #fff;
-    border: 1px solid #d93025;
-    color: #d93025;
-    padding: 8px 16px;
-    border-radius: 6px;
-    cursor: pointer;
+    background: var(--app-surface);
+    border: 1px solid var(--app-danger-border);
+    color: var(--app-danger);
+    padding: 10px 16px;
+    border-radius: 12px;
+    font-weight: 700;
 }
 
 .empty-state {
     text-align: center;
     padding: 60px;
-    color: #bbb;
+    color: var(--app-text-faint);
+    border: 1px dashed var(--app-border-strong);
+    border-radius: 24px;
+    background: rgba(255, 254, 251, 0.72);
+}
+
+.no-requests p {
+    color: var(--app-text-soft);
+}
+
+@media (max-width: 980px) {
+    .trade-board-container {
+        padding: 0 14px 18px;
+    }
+
+    .board-header,
+    .card-top,
+    .request-item,
+    .request-actions {
+        display: grid;
+    }
 }
 </style>

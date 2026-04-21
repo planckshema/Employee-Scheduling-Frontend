@@ -31,7 +31,7 @@
       </div>
 
       <div v-if="loading" class="loading-card">
-        <v-progress-circular indeterminate color="#2647c8" size="34" width="3" />
+        <v-progress-circular indeterminate color="primary" size="34" width="3" />
         <p>Loading availability...</p>
       </div>
 
@@ -670,20 +670,21 @@ export default defineComponent({
 
 <style scoped>
 .tab-content {
-  padding: 0 20px 24px;
+  padding: 0 20px 28px;
   display: grid;
-  gap: 16px;
+  gap: 18px;
 }
 
 .panel,
 .status-banner {
-  border: 1px solid #dce1ec;
-  border-radius: 18px;
-  background: #fff;
+  border: 1px solid var(--app-border);
+  border-radius: 22px;
+  background: linear-gradient(180deg, var(--app-surface) 0%, var(--app-surface-soft) 100%);
+  box-shadow: var(--app-shadow-sm);
 }
 
 .panel {
-  padding: 20px;
+  padding: 22px;
 }
 
 .status-banner {
@@ -694,13 +695,15 @@ export default defineComponent({
 }
 
 .status-banner.error {
-  background: #fff4f5;
-  color: #8b1f2d;
+  background: var(--app-danger-bg);
+  color: var(--app-danger);
+  border-color: var(--app-danger-border);
 }
 
 .status-banner.success {
-  background: #effcf4;
-  color: #195f40;
+  background: var(--app-success-bg);
+  color: var(--app-primary);
+  border-color: var(--app-success-border);
 }
 
 .status-banner.warning {
@@ -840,7 +843,7 @@ export default defineComponent({
   letter-spacing: 0.08em;
   font-size: 12px;
   font-weight: 800;
-  color: #3957ba;
+  color: var(--app-secondary);
 }
 
 h2,
@@ -849,27 +852,24 @@ p {
   margin: 0;
 }
 
-.muted {
-  color: #617089;
+.muted,
+.availability-meta span,
+.history-row p,
+.empty-copy {
+  color: var(--app-text-soft);
 }
 
 .primary-button {
-  border-radius: 12px;
-  padding: 11px 16px;
+  border-radius: 14px;
+  padding: 12px 18px;
   font-weight: 700;
-  border: 1px solid #080c28;
-  background: #060828;
+  border: 1px solid var(--app-primary-deep);
+  background: linear-gradient(135deg, var(--app-primary) 0%, var(--app-secondary) 100%);
   color: #fff;
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.primary-button:hover:not(:disabled) {
-  background: #1a1f3a;
-  transform: translateY(-2px);
+  box-shadow: 0 16px 28px rgba(47, 107, 63, 0.18);
 }
 
 .primary-button:disabled {
@@ -884,7 +884,7 @@ p {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  color: #617089;
+  color: var(--app-text-soft);
 }
 
 .availability-calendar {
@@ -1133,10 +1133,10 @@ p {
 }
 
 .history-row {
-  border: 1px solid #dfe4ef;
-  border-radius: 8px;
-  padding: 12px 16px;
-  background: #f9fbff;
+  border: 1px solid var(--app-border);
+  border-radius: 18px;
+  padding: 14px 16px;
+  background: var(--app-surface);
 }
 
 .history-row strong {
@@ -1145,10 +1145,8 @@ p {
   color: #324055;
 }
 
-.history-row p {
-  margin: 0;
-  font-size: 13px;
-  color: #617089;
+.availability-row.unavailable {
+  background: var(--app-surface-soft);
 }
 
 .empty-copy {
@@ -1189,7 +1187,7 @@ p {
 .modal-editor h2 {
   font-size: 20px;
   font-weight: 700;
-  color: #324055;
+  color: var(--app-text);
 }
 
 .icon-inline {
@@ -1205,200 +1203,20 @@ p {
   transition: all 0.2s;
 }
 
-.icon-inline:hover {
-  background: #f9fbff;
-  border-color: #667eea;
-  color: #667eea;
+.time-inputs input {
+  min-height: 44px;
+  border-radius: 14px;
+  border: 1px solid var(--app-border);
+  background: var(--app-surface-soft);
+  padding: 0 12px;
+  color: var(--app-text);
 }
 
-.editor-content {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  margin-bottom: 20px;
-}
-
-.form-group {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.form-group label {
-  font-weight: 600;
-  color: #324055;
-  font-size: 14px;
-}
-
-.form-group input,
-.form-group select {
-  width: 100%;
-  border: 2px solid #dce1ec;
-  background: #f9fbff;
-  border-radius: 8px;
-  padding: 10px 12px;
-  font: inherit;
+.time-inputs input:focus {
+  border-color: var(--app-primary);
+  background: var(--app-surface);
+  box-shadow: 0 0 0 4px rgba(79, 155, 88, 0.12);
   outline: none;
-}
-
-.two-col {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-}
-
-.unavailable-list {
-  display: grid;
-  gap: 8px;
-}
-
-.unavailable-row {
-  border: 1px solid #f0b4c0;
-  border-radius: 8px;
-  background: #fff6f8;
-  padding: 10px 12px;
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-  align-items: center;
-}
-
-.row-actions {
-  display: flex;
-  gap: 8px;
-}
-
-.danger-icon {
-  color: #b4233c;
-  border-color: #f0b4c0;
-}
-
-.unavailable-row p {
-  color: #617089;
-  font-size: 13px;
-  margin-top: 4px;
-}
-
-.time-picker {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  background: #f9fbff;
-  border: 2px solid #dce1ec;
-  border-radius: 8px;
-  padding: 8px 12px;
-}
-
-.time-picker input {
-  width: 60px;
-  text-align: center;
-  border: none;
-  background: transparent;
-  font-size: 16px;
-  font-weight: 700;
-  color: #324055;
-}
-
-.time-picker input:focus {
-  outline: none;
-}
-
-.separator {
-  font-weight: 700;
-  color: #667eea;
-  font-size: 18px;
-}
-
-.time-display {
-  padding: 12px;
-  background: #f0f4ff;
-  border-radius: 8px;
-  text-align: center;
-  font-size: 16px;
-  color: #667eea;
-  border: 2px solid #e8ecf6;
-}
-
-.quick-time-buttons {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 8px;
-}
-
-.quick-btn {
-  padding: 10px 12px;
-  border: 2px solid #dce1ec;
-  background: white;
-  border-radius: 8px;
-  font-size: 12px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
-  color: #324055;
-}
-
-.quick-btn:hover {
-  border-color: #667eea;
-  background: #f0f4ff;
-  color: #667eea;
-}
-
-.quick-btn.danger {
-  border-color: #ffcccc;
-  color: #d32f2f;
-}
-
-.quick-btn.danger:hover {
-  background: #ffebee;
-  border-color: #ff6b6b;
-}
-
-.modal-editor footer {
-  display: flex;
-  gap: 12px;
-  justify-content: flex-end;
-}
-
-.footer-left {
-  margin-right: auto;
-}
-
-.btn-cancel,
-.btn-save,
-.btn-danger {
-  padding: 12px 24px;
-  border-radius: 8px;
-  font-weight: 600;
-  font-size: 14px;
-  cursor: pointer;
-  transition: all 0.2s;
-  border: none;
-}
-
-.btn-danger {
-  background: #fff1f3;
-  color: #b4233c;
-  border: 1px solid #f0b4c0;
-}
-
-.btn-cancel {
-  background: #f0f0f0;
-  color: #324055;
-}
-
-.btn-cancel:hover {
-  background: #e0e0e0;
-}
-
-.btn-save {
-  background: #667eea;
-  color: white;
-}
-
-.btn-save:hover {
-  background: #5568d3;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
 }
 
 @media (max-width: 980px) {

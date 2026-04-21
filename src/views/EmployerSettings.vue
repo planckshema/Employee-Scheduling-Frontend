@@ -20,7 +20,7 @@
       </div>
 
       <div v-if="loading" class="loading-card">
-        <v-progress-circular indeterminate color="#2647c8" size="34" width="3" />
+        <v-progress-circular indeterminate color="primary" size="34" width="3" />
         <p>Loading settings...</p>
       </div>
 
@@ -171,18 +171,19 @@ export default {
 
 <style scoped>
 .tab-content {
-  padding: 0 20px 24px;
+  padding: 0 20px 28px;
 }
 
 .panel,
 .status-banner {
-  border: 1px solid #dce1ec;
-  border-radius: 18px;
-  background: #fff;
+  border: 1px solid var(--app-border);
+  border-radius: 22px;
+  background: linear-gradient(180deg, var(--app-surface) 0%, var(--app-surface-soft) 100%);
+  box-shadow: var(--app-shadow-sm);
 }
 
 .panel {
-  padding: 20px;
+  padding: 22px;
 }
 
 .status-banner {
@@ -194,13 +195,15 @@ export default {
 }
 
 .status-banner.error {
-  background: #fff4f5;
-  color: #8b1f2d;
+  background: var(--app-danger-bg);
+  color: var(--app-danger);
+  border-color: var(--app-danger-border);
 }
 
 .status-banner.success {
-  background: #effcf4;
-  color: #195f40;
+  background: var(--app-success-bg);
+  color: var(--app-primary);
+  border-color: var(--app-success-border);
 }
 
 .panel-header {
@@ -213,7 +216,7 @@ export default {
   letter-spacing: 0.08em;
   font-size: 12px;
   font-weight: 800;
-  color: #3957ba;
+  color: var(--app-secondary);
 }
 
 h2,
@@ -222,7 +225,7 @@ p {
 }
 
 .muted {
-  color: #617089;
+  color: var(--app-text-soft);
 }
 
 .loading-card {
@@ -232,7 +235,7 @@ p {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  color: #617089;
+  color: var(--app-text-soft);
 }
 
 .settings-grid {
@@ -241,33 +244,44 @@ p {
 }
 
 .profile-card {
-  border: 1px solid #e1e6f0;
-  border-radius: 16px;
-  background: #f9fbff;
-  padding: 18px;
+  border: 1px solid var(--app-border);
+  border-radius: 20px;
+  background: var(--app-surface);
+  padding: 20px;
 }
 
 label {
   display: block;
   margin-bottom: 6px;
   font-weight: 700;
+  color: var(--app-text);
 }
 
 input,
 textarea {
   width: 100%;
-  min-height: 46px;
-  border-radius: 12px;
-  border: 1px solid #d8deea;
-  background: #fff;
+  min-height: 48px;
+  border-radius: 14px;
+  border: 1px solid var(--app-border);
+  background: var(--app-surface-soft);
   padding: 0 12px;
   margin-bottom: 14px;
   font: inherit;
+  color: var(--app-text);
 }
 
 textarea {
-  min-height: 110px;
+  min-height: 120px;
   padding: 12px;
+  resize: vertical;
+}
+
+input:focus,
+textarea:focus {
+  border-color: var(--app-primary);
+  background: var(--app-surface);
+  box-shadow: 0 0 0 4px rgba(79, 155, 88, 0.12);
+  outline: none;
 }
 
 .actions-row {
@@ -276,15 +290,16 @@ textarea {
 }
 
 .primary-button {
-  border-radius: 12px;
-  padding: 11px 16px;
+  border-radius: 14px;
+  padding: 12px 18px;
   font-weight: 700;
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  border: 1px solid #080c28;
-  background: #060828;
+  border: 1px solid var(--app-primary-deep);
+  background: linear-gradient(135deg, var(--app-primary) 0%, var(--app-secondary) 100%);
   color: #fff;
+  box-shadow: 0 16px 28px rgba(47, 107, 63, 0.18);
 }
 
 .primary-button:disabled {

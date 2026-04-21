@@ -6,18 +6,53 @@ export default createVuetify({
     defaultTheme: "light",
     themes: {
       light: {
+        dark: false,
         colors: {
-          primary: "#80162B",
-          secondary: "#E1E1E1",
-          accent: "#47121D",
-          success: "#47121D",
-          error: "#EE5044",
-          teal: "#63BAC0",
-          blue: "#196CA2",
-          yellow: "#F8C545",
-          darkblue: "#032F45",
+          primary: "#0b6e4f",
+          secondary: "#08a045",
+          accent: "#6bbf59",
+          background: "#edf8f2",
+          surface: "#fffefb",
+          success: "#08a045",
+          warning: "#6bbf59",
+          error: "#c65a4a",
+          info: "#21d375",
+          teal: "#21d375",
+          blue: "#0b6e4f",
+          yellow: "#6bbf59",
+          darkblue: "#073b3a",
         },
       },
+    },
+  },
+  defaults: {
+    VBtn: {
+      rounded: "lg",
+    },
+    VCard: {
+      elevation: 0,
+      rounded: "xl",
+    },
+    VTextField: {
+      color: "primary",
+      density: "comfortable",
+      hideDetails: "auto",
+      variant: "outlined",
+    },
+    VTextarea: {
+      color: "primary",
+      density: "comfortable",
+      hideDetails: "auto",
+      variant: "outlined",
+    },
+    VSelect: {
+      color: "primary",
+      density: "comfortable",
+      hideDetails: "auto",
+      variant: "outlined",
+    },
+    VProgressCircular: {
+      color: "primary",
     },
   },
   icons: {

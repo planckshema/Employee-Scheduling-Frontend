@@ -1381,25 +1381,27 @@ p {
 }
 
 .status-banner {
-  border: 1px solid #dce1ec;
-  border-radius: 16px;
+  border: 1px solid var(--app-border);
+  border-radius: 18px;
   padding: 14px 16px;
   display: flex;
   gap: 10px;
   align-items: center;
   margin-bottom: 14px;
-  background: #fff;
+  background: var(--app-surface);
+  box-shadow: var(--app-shadow-sm);
 }
 
 .status-banner.warning {
-  background: #fff8eb;
-  color: #9b6300;
-  border-color: #efd196;
+  background: var(--app-warning-bg);
+  color: #9a6c18;
+  border-color: var(--app-warning-border);
 }
 
 .status-banner.success {
-  background: #effcf4;
-  color: #195f40;
+  background: var(--app-success-bg);
+  color: var(--app-primary);
+  border-color: var(--app-success-border);
 }
 
 .schedule-toolbar,
@@ -1449,24 +1451,23 @@ p {
 
 .summary-card {
   min-width: 180px;
-  border: 1px solid rgba(220, 225, 236, 0.95);
-  border-radius: 18px;
-  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid var(--app-border);
+  border-radius: 20px;
+  background: linear-gradient(180deg, var(--app-surface) 0%, var(--app-surface-soft) 100%);
   padding: 16px 18px;
   display: grid;
   gap: 6px;
-  box-shadow: 0 12px 28px rgba(30, 41, 65, 0.05);
+  box-shadow: var(--app-shadow-sm);
   transition: transform 0.2s;
 }
 
-/* Hover effect since it's now a link */
 .summary-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 20px 32px rgba(36, 74, 46, 0.12);
 }
 
 .summary-card span {
-  color: #617089;
+  color: var(--app-text-faint);
   font-size: 12px;
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -1474,47 +1475,44 @@ p {
 
 .summary-card strong {
   font-size: 24px;
+  color: var(--app-text);
 }
 
-/* The "Flag" state when trades > 0 */
 .pending-card {
-  border-left: 5px solid #fb8c00;
-  /* Orange flag */
-  background-color: #fff3e0;
-  /* Light orange tint */
+  border-left: 5px solid #c1912c;
+  background-color: var(--app-warning-bg);
 }
 
 .pending-card strong {
-  color: #ef6c00;
+  color: #a37218;
 }
 
 .warning-card {
-  background: #fff3e0;
-  border-color: #ffb74d;
-  color: #8a4f00;
+  background: var(--app-warning-bg);
+  border-color: var(--app-warning-border);
 }
 
 .conflict-card {
-  background: #ffebee;
-  border-color: #f44336;
-  color: #b71c1c;
+  background: var(--app-danger-bg);
+  border-color: var(--app-danger-border);
 }
 
 .icon-button,
 .icon-inline {
-  border: 1px solid #d5dae7;
-  background: #fff;
-  border-radius: 10px;
+  border: 1px solid var(--app-border);
+  background: var(--app-surface);
+  color: var(--app-text);
+  border-radius: 12px;
   width: 38px;
   height: 38px;
-  cursor: pointer;
+  box-shadow: 0 10px 18px rgba(36, 74, 46, 0.05);
 }
 
 .ghost-button,
 .primary-button,
 .cell-add-button,
 .mini-add-button {
-  border-radius: 12px;
+  border-radius: 14px;
   font-weight: 700;
   display: inline-flex;
   align-items: center;
@@ -1524,15 +1522,17 @@ p {
 .ghost-button,
 .cell-add-button,
 .mini-add-button {
-  border: 1px solid #d7dceb;
-  background: #fff;
+  border: 1px solid var(--app-border);
+  background: var(--app-surface);
+  color: var(--app-text);
 }
 
 .primary-button {
-  border: 1px solid #080c28;
-  background: #060828;
+  border: 1px solid var(--app-primary-deep);
+  background: linear-gradient(135deg, var(--app-primary) 0%, var(--app-secondary) 100%);
   color: #fff;
   padding: 11px 16px;
+  box-shadow: 0 16px 28px rgba(47, 107, 63, 0.18);
 }
 
 .ghost-button {
@@ -1599,12 +1599,12 @@ p {
 }
 
 .schedule-table-wrap {
-  border: 1px solid rgba(220, 225, 236, 0.95);
-  border-radius: 24px;
-  background: rgba(255, 255, 255, 0.93);
+  border: 1px solid var(--app-border);
+  border-radius: 26px;
+  background: rgba(255, 254, 251, 0.94);
   overflow-x: auto;
-  box-shadow: 0 22px 48px rgba(30, 41, 65, 0.06);
-  padding: 12px;
+  box-shadow: var(--app-shadow-md);
+  padding: 14px;
 }
 
 .schedule-table {
@@ -1616,16 +1616,16 @@ p {
 
 .schedule-table th,
 .schedule-table td {
-  border: 1px solid #e7ebf3;
+  border: 1px solid #dbe7d7;
   vertical-align: top;
 }
 
 .schedule-table th {
-  background: #f5f7fb;
+  background: #eff7ed;
   padding: 16px 14px;
   text-align: left;
   font-size: 14px;
-  color: #223047;
+  color: var(--app-text);
 }
 
 .time-header {
@@ -1635,13 +1635,13 @@ p {
 .time-cell {
   width: 148px;
   padding: 16px 12px;
-  background: #fafbfd;
+  background: var(--app-surface-soft);
 }
 
 .slot-cell {
   min-width: 154px;
   padding: 10px;
-  background: #fbfcff;
+  background: #fbfef9;
 }
 
 .cell-actions {
@@ -1654,7 +1654,8 @@ p {
 .mini-add-button {
   padding: 6px 10px;
   font-size: 12px;
-  color: #364154;
+  color: var(--app-text-soft);
+  background: var(--app-surface-soft);
 }
 
 .mini-add-button {
@@ -1668,22 +1669,21 @@ p {
 
 .shift-card {
   position: relative;
-  border-radius: 16px;
-  border: 1px solid #bfd4ff;
-  background: linear-gradient(180deg, #eef4ff 0%, #e7f0ff 100%);
+  border-radius: 18px;
+  border: 1px solid rgba(79, 155, 88, 0.24);
+  background: linear-gradient(180deg, rgba(237, 248, 236, 0.98) 0%, rgba(228, 243, 226, 0.98) 100%);
   padding: 13px 12px 12px;
-  cursor: pointer;
-  box-shadow: 0 8px 18px rgba(71, 101, 173, 0.08);
+  box-shadow: 0 10px 20px rgba(47, 107, 63, 0.08);
 }
 
 .shift-card.unassigned {
-  border-color: #efc772;
-  background: linear-gradient(180deg, #fff8e8 0%, #fff3d6 100%);
+  border-color: var(--app-warning-border);
+  background: linear-gradient(180deg, #fffaf0 0%, #fff4df 100%);
 }
 
 .shift-card.flagged {
-  border-color: #e08ea0;
-  background: linear-gradient(180deg, #fff6f8 0%, #ffe9ee 100%);
+  border-color: var(--app-danger-border);
+  background: linear-gradient(180deg, #fff7f7 0%, #ffecec 100%);
 }
 
 .shift-header {
@@ -1697,23 +1697,23 @@ p {
 }
 
 .shift-header span {
-  color: #4e5d73;
+  color: var(--app-text-soft);
   font-size: 13px;
 }
 
 .shift-assignee {
   margin-top: 10px;
   font-weight: 700;
-  color: #223047;
+  color: var(--app-text);
 }
 
 .shift-assignee.missing {
-  color: #b56a00;
+  color: #a37218;
 }
 
 .shift-flag {
   margin-top: 6px;
-  color: #b4233c;
+  color: var(--app-danger);
   font-size: 12px;
   font-weight: 700;
 }
@@ -1723,30 +1723,30 @@ p {
   top: 8px;
   right: 8px;
   border: none;
-  background: rgba(255, 255, 255, 0.7);
+  background: rgba(255, 255, 255, 0.84);
   border-radius: 999px;
   width: 22px;
   height: 22px;
   display: grid;
   place-items: center;
-  cursor: pointer;
+  color: var(--app-danger);
 }
 
 .empty-slot {
   min-height: 82px;
-  border: 1px dashed #d7dceb;
-  border-radius: 14px;
+  border: 1px dashed var(--app-border-strong);
+  border-radius: 16px;
   display: grid;
   place-items: center;
-  color: #8591a6;
+  color: var(--app-text-faint);
   font-size: 13px;
-  background: rgba(255, 255, 255, 0.72);
+  background: rgba(255, 255, 255, 0.7);
 }
 
 .overlay {
   position: fixed;
   inset: 0;
-  background: rgba(22, 27, 39, 0.48);
+  background: rgba(24, 44, 30, 0.46);
   z-index: 12;
   display: flex;
   align-items: center;
@@ -1757,11 +1757,13 @@ p {
 .modal {
   width: 100%;
   max-width: 760px;
-  background: #fff;
-  border-radius: 18px;
-  padding: 22px;
+  background: linear-gradient(180deg, var(--app-surface) 0%, var(--app-surface-soft) 100%);
+  border: 1px solid var(--app-border);
+  border-radius: 24px;
+  padding: 24px;
   max-height: 94vh;
   overflow-y: auto;
+  box-shadow: var(--app-shadow-lg);
 }
 
 .template-modal {
@@ -1776,34 +1778,43 @@ p {
 }
 
 .modal label {
-  font-size: 18px;
+  font-size: 15px;
   font-weight: 700;
   margin-top: 10px;
   margin-bottom: 6px;
   display: inline-block;
+  color: var(--app-text);
 }
 
 .modal input,
 .modal select {
   width: 100%;
-  border: none;
-  background: #f1f2f7;
-  border-radius: 12px;
-  min-height: 52px;
+  border: 1px solid var(--app-border);
+  background: var(--app-surface-soft);
+  color: var(--app-text);
+  border-radius: 16px;
+  min-height: 50px;
   padding: 11px 16px;
-  outline: none;
   margin-bottom: 6px;
+}
+
+.modal input:focus,
+.modal select:focus {
+  border-color: var(--app-primary);
+  background: var(--app-surface);
+  box-shadow: 0 0 0 4px rgba(79, 155, 88, 0.12);
+  outline: none;
 }
 
 .helper {
   margin-top: 2px;
   margin-bottom: 8px;
-  color: #617089;
+  color: var(--app-text-soft);
   font-size: 13px;
 }
 
 .warning-text {
-  color: #b4233c;
+  color: var(--app-danger);
 }
 
 .two-col {
@@ -1824,11 +1835,11 @@ p {
 }
 
 .danger-button {
-  color: #b4233c;
+  color: var(--app-danger);
 }
 
 .muted {
-  color: #617089;
+  color: var(--app-text-soft);
 }
 
 .modal-copy {
@@ -1858,10 +1869,10 @@ p {
 }
 
 .template-card {
-  border: 1px solid #dce1ec;
-  border-radius: 14px;
+  border: 1px solid var(--app-border);
+  border-radius: 18px;
   padding: 14px;
-  background: #fbfcff;
+  background: var(--app-surface);
   display: flex;
   justify-content: space-between;
   gap: 14px;

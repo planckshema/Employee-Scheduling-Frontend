@@ -98,30 +98,24 @@ export default {
     left: 0;
     width: 100vw;
     height: 100vh;
-    background: rgba(0, 0, 0, 0.5);
-    /* This is the gray out */
+    background: rgba(24, 44, 30, 0.46);
     display: flex;
     align-items: center;
     justify-content: center;
     z-index: 999;
-    /* High number to stay on top */
 }
 
 .modal {
-    background: white !important;
-    /* Forces the background to be white */
-    background-color: #ffffff;
-    border-radius: 8px;
+    background: linear-gradient(180deg, var(--app-surface) 0%, var(--app-surface-soft) 100%) !important;
+    border: 1px solid var(--app-border);
+    border-radius: 22px;
     width: 450px;
     padding: 24px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+    box-shadow: var(--app-shadow-lg);
     display: block;
-    /* Ensures it's not hidden */
-    color: #3c4043;
-    /* Dark text for readability */
+    color: var(--app-text);
 }
 
-/* Rest of your existing detail styles */
 .detail-row {
     display: flex;
     align-items: flex-start;
@@ -137,7 +131,7 @@ export default {
 
 .detail-info label {
     font-size: 11px;
-    color: #70757a;
+    color: var(--app-text-faint);
     text-transform: uppercase;
     letter-spacing: 0.5px;
 }
@@ -148,7 +142,7 @@ export default {
 }
 
 .detail-info span {
-    color: #5f6368;
+    color: var(--app-text-soft);
     font-size: 14px;
 }
 
@@ -157,7 +151,7 @@ header {
     justify-content: space-between;
     align-items: center;
     margin-bottom: 20px;
-    border-bottom: 1px solid #eee;
+    border-bottom: 1px solid var(--app-border);
     padding-bottom: 10px;
 }
 
@@ -169,21 +163,23 @@ footer {
 }
 
 .danger-button {
-    background: #d93025;
+    background: var(--app-danger);
     color: white;
-    padding: 8px 16px;
+    padding: 10px 16px;
     border: none;
-    border-radius: 4px;
+    border-radius: 12px;
     cursor: pointer;
     margin-right: auto;
+    font-weight: 700;
 }
 
 .primary-button {
-    background: #1a73e8;
+    background: linear-gradient(135deg, var(--app-primary) 0%, var(--app-secondary) 100%);
     color: white;
-    padding: 8px 16px;
+    padding: 10px 16px;
     border: none;
-    border-radius: 4px;
+    border-radius: 12px;
     cursor: pointer;
+    font-weight: 700;
 }
 </style>

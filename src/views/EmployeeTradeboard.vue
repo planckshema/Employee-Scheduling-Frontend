@@ -117,7 +117,7 @@
         <v-card-actions>
           <v-spacer />
           <v-btn variant="text" @click="closeAddModal">Cancel</v-btn>
-          <v-btn color="black" :disabled="!selectedShift" @click="submitTrade">
+          <v-btn color="primary" :disabled="!selectedShift" @click="submitTrade">
             Post Shift
           </v-btn>
         </v-card-actions>
@@ -291,20 +291,21 @@ export default {
 
 <style scoped>
 .tab-content {
-  padding: 0 20px 24px;
+  padding: 0 20px 28px;
   display: grid;
-  gap: 16px;
+  gap: 18px;
 }
 
 .panel,
 .status-banner {
-  border: 1px solid #dce1ec;
-  border-radius: 18px;
-  background: #fff;
+  border: 1px solid var(--app-border);
+  border-radius: 22px;
+  background: linear-gradient(180deg, var(--app-surface) 0%, var(--app-surface-soft) 100%);
+  box-shadow: var(--app-shadow-sm);
 }
 
 .panel {
-  padding: 20px;
+  padding: 22px;
 }
 
 .hero-panel {
@@ -312,6 +313,7 @@ export default {
   justify-content: space-between;
   gap: 16px;
   align-items: center;
+  background: linear-gradient(180deg, var(--app-surface) 0%, rgba(236, 248, 238, 0.8) 100%);
 }
 
 .status-banner {
@@ -322,8 +324,9 @@ export default {
 }
 
 .status-banner.error {
-  background: #fff4f5;
-  color: #8b1f2d;
+  background: var(--app-danger-bg);
+  color: var(--app-danger);
+  border-color: var(--app-danger-border);
 }
 
 .eyebrow {
@@ -332,7 +335,7 @@ export default {
   letter-spacing: 0.08em;
   font-size: 12px;
   font-weight: 800;
-  color: #3957ba;
+  color: var(--app-secondary);
 }
 
 h2,
@@ -345,13 +348,13 @@ p {
 .note,
 .empty-copy,
 .trade-card p {
-  color: #617089;
+  color: var(--app-text-soft);
 }
 
 .board-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 16px;
+  gap: 18px;
 }
 
 .section-head {
@@ -364,10 +367,10 @@ p {
 }
 
 .trade-card {
-  border: 1px solid #e1e6f0;
-  border-radius: 16px;
-  background: #f9fbff;
-  padding: 14px;
+  border: 1px solid var(--app-border);
+  border-radius: 18px;
+  background: var(--app-surface);
+  padding: 16px;
   display: grid;
   gap: 12px;
 }
@@ -382,31 +385,31 @@ p {
 
 .badge {
   border-radius: 999px;
-  padding: 6px 10px;
+  padding: 7px 10px;
   font-size: 12px;
   font-weight: 700;
   text-transform: uppercase;
 }
 
 .badge.available {
-  background: #e8f5e9;
-  color: #2e7d32;
+  background: rgba(123, 201, 111, 0.18);
+  color: var(--app-primary);
 }
 
 .badge.pending {
-  background: #fff3e0;
-  color: #ef6c00;
+  background: var(--app-warning-bg);
+  color: #a37218;
 }
 
 .badge.approved {
-  background: #eef2fb;
-  color: #3957ba;
+  background: rgba(47, 107, 63, 0.12);
+  color: var(--app-secondary);
 }
 
 .primary-button,
 .ghost-button {
-  border-radius: 12px;
-  padding: 11px 16px;
+  border-radius: 14px;
+  padding: 12px 18px;
   font-weight: 700;
   display: inline-flex;
   align-items: center;
@@ -414,14 +417,16 @@ p {
 }
 
 .primary-button {
-  border: 1px solid #080c28;
-  background: #060828;
+  border: 1px solid var(--app-primary-deep);
+  background: linear-gradient(135deg, var(--app-primary) 0%, var(--app-secondary) 100%);
   color: #fff;
+  box-shadow: 0 16px 28px rgba(47, 107, 63, 0.18);
 }
 
 .ghost-button {
-  border: 1px solid #d7dceb;
-  background: #fff;
+  border: 1px solid var(--app-border);
+  background: var(--app-surface-soft);
+  color: var(--app-text);
 }
 
 .small {

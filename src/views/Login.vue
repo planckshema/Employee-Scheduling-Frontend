@@ -139,18 +139,11 @@ export default {
 <style scoped>
 .login-page {
   min-height: 100vh;
-  padding: 24px;
-  background: radial-gradient(
-      circle at top left,
-      rgba(87, 128, 255, 0.18),
-      transparent 32%
-    ),
-    radial-gradient(
-      circle at bottom right,
-      rgba(79, 182, 139, 0.18),
-      transparent 28%
-    ),
-    linear-gradient(135deg, #eff3fb 0%, #dfe7f2 100%);
+  padding: 28px;
+  background:
+    radial-gradient(circle at top left, rgba(123, 201, 111, 0.18), transparent 28%),
+    radial-gradient(circle at bottom right, rgba(79, 155, 88, 0.15), transparent 30%),
+    linear-gradient(135deg, #f6fbf5 0%, var(--app-bg) 52%, #e3f0e3 100%);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -160,27 +153,30 @@ export default {
   width: 100%;
   max-width: 1040px;
   display: grid;
-  grid-template-columns: 1.1fr 0.9fr;
-  gap: 28px;
+  grid-template-columns: 1.08fr 0.92fr;
+  gap: 24px;
 }
 
 .hero-panel,
 .login-card {
-  border-radius: 24px;
-  background: rgba(255, 255, 255, 0.88);
-  box-shadow: 0 18px 40px rgba(28, 39, 64, 0.08);
-  backdrop-filter: blur(10px);
+  border: 1px solid var(--app-border);
+  border-radius: 28px;
+  box-shadow: var(--app-shadow-md);
 }
 
 .hero-panel {
-  padding: 48px;
+  padding: 50px 46px;
+  background:
+    linear-gradient(145deg, rgba(35, 79, 47, 0.96), rgba(47, 107, 63, 0.92)),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.1), transparent);
+  color: #f6fff3;
 }
 
 .eyebrow {
-  margin-bottom: 16px;
-  color: #3359c9;
-  font-size: 14px;
-  font-weight: 700;
+  margin: 0 0 16px;
+  color: rgba(236, 248, 238, 0.86);
+  font-size: 13px;
+  font-weight: 800;
   letter-spacing: 0.12em;
   text-transform: uppercase;
 }
@@ -188,17 +184,18 @@ export default {
 .hero-panel h1 {
   margin: 0;
   max-width: 520px;
-  color: #152033;
+  color: #f7fff5;
   font-size: 56px;
   line-height: 1.02;
+  letter-spacing: -0.03em;
 }
 
 .hero-copy {
   margin-top: 22px;
   max-width: 520px;
-  color: #5b6880;
-  font-size: 20px;
-  line-height: 1.6;
+  color: rgba(236, 248, 238, 0.8);
+  font-size: 19px;
+  line-height: 1.7;
 }
 
 .login-card {
@@ -206,19 +203,22 @@ export default {
   display: flex;
   flex-direction: column;
   justify-content: center;
+  background: rgba(255, 254, 251, 0.94);
+  backdrop-filter: blur(12px);
 }
 
 .login-card h2 {
   margin: 0 0 10px;
-  color: #152033;
+  color: var(--app-text);
   font-size: 34px;
+  letter-spacing: -0.02em;
 }
 
 .login-copy {
   margin-bottom: 24px;
-  color: #5b6880;
-  font-size: 17px;
-  line-height: 1.5;
+  color: var(--app-text-soft);
+  font-size: 16px;
+  line-height: 1.6;
 }
 
 .google-button {
@@ -226,13 +226,14 @@ export default {
 }
 
 .status-alert {
-  margin-top: 20px;
+  margin-top: 18px;
 }
 
 .helper-text {
   margin-top: 18px;
-  color: #6a768d;
+  color: var(--app-text-soft);
   font-size: 14px;
+  line-height: 1.6;
 }
 
 @media (max-width: 960px) {
@@ -257,19 +258,18 @@ export default {
 .admin-btn {
   margin-top: 16px;
   width: 100%;
-  padding: 8px;
-  border: none;
+  padding: 10px 14px;
+  border: 1px solid var(--app-border);
   border-radius: 999px;
-  background: transparent;
-  color: #6a768d;
+  background: var(--app-surface-soft);
+  color: var(--app-text-soft);
   font-size: 13px;
-  font-weight: 400;
-  cursor: pointer;
-  transition: color 0.2s;
+  font-weight: 700;
 }
 
 .admin-btn:hover {
-  color: #3359c9;
-  background: transparent;
+  color: var(--app-primary);
+  border-color: var(--app-border-strong);
+  transform: translateY(-1px);
 }
 </style>

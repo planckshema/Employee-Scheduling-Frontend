@@ -82,18 +82,11 @@ export default {
 <style scoped>
 .login-page {
   min-height: 100vh;
-  padding: 24px;
-  background: radial-gradient(
-      circle at top left,
-      rgba(87, 128, 255, 0.18),
-      transparent 32%
-    ),
-    radial-gradient(
-      circle at bottom right,
-      rgba(79, 182, 139, 0.18),
-      transparent 28%
-    ),
-    linear-gradient(135deg, #eff3fb 0%, #dfe7f2 100%);
+  padding: 28px;
+  background:
+    radial-gradient(circle at top left, rgba(123, 201, 111, 0.16), transparent 30%),
+    radial-gradient(circle at bottom right, rgba(79, 155, 88, 0.14), transparent 30%),
+    linear-gradient(135deg, #f7fbf6 0%, var(--app-bg) 50%, #e1eee1 100%);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -103,27 +96,30 @@ export default {
   width: 100%;
   max-width: 1040px;
   display: grid;
-  grid-template-columns: 1.1fr 0.9fr;
-  gap: 28px;
+  grid-template-columns: 1.08fr 0.92fr;
+  gap: 24px;
 }
 
 .hero-panel,
 .login-card {
-  border-radius: 24px;
-  background: rgba(255, 255, 255, 0.88);
-  box-shadow: 0 18px 40px rgba(28, 39, 64, 0.08);
-  backdrop-filter: blur(10px);
+  border: 1px solid var(--app-border);
+  border-radius: 28px;
+  box-shadow: var(--app-shadow-md);
 }
 
 .hero-panel {
-  padding: 48px;
+  padding: 50px 46px;
+  background:
+    linear-gradient(145deg, rgba(27, 61, 37, 0.97), rgba(41, 89, 54, 0.94)),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.08), transparent);
+  color: #f7fff5;
 }
 
 .eyebrow {
-  margin-bottom: 16px;
-  color: #3359c9;
-  font-size: 14px;
-  font-weight: 700;
+  margin: 0 0 16px;
+  color: rgba(236, 248, 238, 0.82);
+  font-size: 13px;
+  font-weight: 800;
   letter-spacing: 0.12em;
   text-transform: uppercase;
 }
@@ -131,17 +127,18 @@ export default {
 .hero-panel h1 {
   margin: 0;
   max-width: 520px;
-  color: #152033;
+  color: #f7fff5;
   font-size: 56px;
   line-height: 1.02;
+  letter-spacing: -0.03em;
 }
 
 .hero-copy {
   margin-top: 22px;
   max-width: 520px;
-  color: #5b6880;
-  font-size: 20px;
-  line-height: 1.6;
+  color: rgba(236, 248, 238, 0.8);
+  font-size: 19px;
+  line-height: 1.7;
 }
 
 .login-card {
@@ -149,38 +146,42 @@ export default {
   display: flex;
   flex-direction: column;
   justify-content: center;
+  background: rgba(255, 254, 251, 0.94);
+  backdrop-filter: blur(12px);
 }
 
 .login-card h2 {
   margin: 0 0 10px;
-  color: #152033;
+  color: var(--app-text);
   font-size: 34px;
+  letter-spacing: -0.02em;
 }
 
 .login-copy {
   margin-bottom: 24px;
-  color: #5b6880;
-  font-size: 17px;
-  line-height: 1.5;
+  color: var(--app-text-soft);
+  font-size: 16px;
+  line-height: 1.6;
 }
 
 .input-field {
   width: 100%;
+  min-height: 50px;
   padding: 12px 16px;
   margin-bottom: 14px;
-  border: 1px solid #d0d8e8;
+  border: 1px solid var(--app-border);
   border-radius: 999px;
   font-size: 15px;
-  color: #152033;
-  background: #f7f9fc;
+  color: var(--app-text);
+  background: var(--app-surface-soft);
   outline: none;
   box-sizing: border-box;
-  transition: border-color 0.2s;
 }
 
 .input-field:focus {
-  border-color: #3359c9;
-  background: #fff;
+  border-color: var(--app-primary);
+  background: var(--app-surface);
+  box-shadow: 0 0 0 4px rgba(79, 155, 88, 0.12);
 }
 
 .status-alert {
@@ -190,37 +191,37 @@ export default {
 
 .login-btn {
   width: 100%;
-  padding: 12px;
+  padding: 13px 18px;
   margin-top: 4px;
-  border: none;
+  border: 1px solid var(--app-primary-deep);
   border-radius: 999px;
-  background: #3359c9;
+  background: linear-gradient(135deg, var(--app-primary) 0%, var(--app-secondary) 100%);
   color: #fff;
   font-size: 15px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.2s;
+  font-weight: 700;
+  box-shadow: 0 18px 30px rgba(47, 107, 63, 0.2);
 }
 
 .login-btn:hover {
-  background: #2648b0;
+  transform: translateY(-1px);
+  filter: brightness(0.98);
 }
 
 .back-btn {
   margin-top: 12px;
   width: 100%;
-  padding: 8px;
-  border: none;
+  padding: 10px 14px;
+  border: 1px solid var(--app-border);
   border-radius: 999px;
-  background: transparent;
-  color: #6a768d;
+  background: var(--app-surface-soft);
+  color: var(--app-text-soft);
   font-size: 13px;
-  cursor: pointer;
-  transition: color 0.2s;
+  font-weight: 700;
 }
 
 .back-btn:hover {
-  color: #3359c9;
+  color: var(--app-primary);
+  transform: translateY(-1px);
 }
 
 @media (max-width: 960px) {
