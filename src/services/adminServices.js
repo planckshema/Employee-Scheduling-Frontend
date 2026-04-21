@@ -4,4 +4,22 @@ export default {
   loginAdmin(credentials) {
     return apiClient.post("admin/login", credentials);
   },
+  getStats() {
+    return apiClient.get("admin/stats");
+  },
+  getUsers(params = {}) {
+    return apiClient.get("admin/users", { params });
+  },
+  createUser(data) {
+    return apiClient.post("admin/users", data);
+  },
+  updateUser(id, data) {
+    return apiClient.put(`admin/users/${id}`, data);
+  },
+  deleteUser(id) {
+    return apiClient.delete(`admin/users/${id}`);
+  },
+  deleteEmployee(id) {
+    return apiClient.delete(`admin/staff/${id}`);
+  },
 };

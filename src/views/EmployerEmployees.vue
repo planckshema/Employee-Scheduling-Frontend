@@ -117,6 +117,25 @@
         </div>
       </section>
     </div>
+    <div v-if="deleteDialog" class="overlay">
+  <section class="modal narrow">
+    <header>
+      <h2>Delete Employee</h2>
+      <button class="icon-inline" @click="deleteDialog = false">
+        <v-icon>mdi-close</v-icon>
+      </button>
+    </header>
+    <p style="color: #617089; margin-bottom: 20px;">
+      Are you sure you want to delete this employee? This cannot be undone.
+    </p>
+    <footer>
+      <button class="ghost-button" @click="deleteDialog = false">Cancel</button>
+      <button class="primary-button" style="background: #dc2626; border-color: #dc2626;" @click="confirmDelete">
+        Delete
+      </button>
+    </footer>
+  </section>
+</div>
   </section>
 </template>
 
@@ -326,10 +345,10 @@ export default {
       this.addEmployeeDialog = false;
       this.newEmployee = { name: "", email: "", phone: "", studentId: "", role: "" };
     },
-    saveEmployee() {
-      if (!this.newEmployee.name.trim() || !this.newEmployee.email.trim()) {
-        return;
-      }
+   saveEmployee() {
+  if (!this.newEmployee.name.trim() || !this.newEmployee.email.trim()) {
+    return;
+  }
 
       const nameParts = this.newEmployee.name.trim().split(/\s+/);
       const firstName = nameParts.shift() || "";
